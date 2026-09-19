@@ -1,0 +1,32 @@
+-- ============================================================
+-- FraudLens Query: write_case
+-- Writes a new FraudCase vertex to the graph
+-- ============================================================
+
+USE GRAPH FraudLens
+
+CREATE OR REPLACE QUERY write_case(
+    STRING case_id,
+    STRING trigger_type,
+    STRING status,
+    DOUBLE fraud_probability,
+    DOUBLE confidence,
+    STRING risk_level,
+    STRING pattern,
+    STRING final_verdict,
+    STRING case_json
+) FOR GRAPH FraudLens
+SYNTAX V2 {
+    /*
+     * Upserts a FraudCase vertex with all case metadata.
+     * Call this at end of investigation to persist results.
+     */
+
+    INSERT INTO FraudCase
+        VALUES(case_id, trigger_type, status, fraud_probability,
+               confidence, risk_level, pattern, final_verdict,
+               now(), now(), case_json);
+
+    PRINT "Case written: " + case_id AS result;
+}
+INSTALL QUERY write_case

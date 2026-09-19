@@ -1,0 +1,11 @@
+-- FraudLens Query: detect_out_of_region
+USE GRAPH FraudLens
+CREATE OR REPLACE QUERY detect_out_of_region(STRING card_id, INT days) FOR GRAPH FraudLens SYNTAX V2 {
+    DATETIME cutoff = datetime_sub(now(), INTERVAL days DAY);
+    card_v = {Customer.*};
+    -- Get transactions in non-home region
+    out_of_region = SELECT t FROM Card:c-(MADE:e1)-Transaction:t-(BILLED_IN:e2)-BillingRegion:r
+                    WHERE c.card_id == card_id AND t.ts >= cutoff;
+    PRINT out_of_region;
+}
+INSTALL QUERY detect_out_of_region

@@ -1,0 +1,25 @@
+-- ============================================================
+-- FraudLens Query: get_card_history
+-- Returns all transactions for a card within N days
+-- ============================================================
+
+USE GRAPH FraudLens
+
+CREATE OR REPLACE QUERY get_card_history(STRING card_id, INT days) FOR GRAPH FraudLens
+SYNTAX V2 {
+    /*
+     * Returns: All transactions made by this card in the last N days
+     * Sorted by timestamp descending
+     */
+
+    DATETIME cutoff = datetime_sub(now(), INTERVAL days DAY);
+
+    card_v = {Card.*};
+    txns   = SELECT t FROM card_v:c - (MADE:e) - Transaction:t
+             WHERE c.card_id == card_id
+               AND t.ts >= cutoff
+             ORDER BY t.ts DESC;
+
+    PRINT txns;
+}
+INSTALL QUERY get_card_history

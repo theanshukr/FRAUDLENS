@@ -1,0 +1,160 @@
+-- ============================================================
+-- FraudLens — TigerGraph Schema
+-- Install with: python scripts/load_schema.py
+-- ============================================================
+
+USE GLOBAL
+
+-- ------------------------------------------------------------
+-- Create Graph
+-- ------------------------------------------------------------
+CREATE GRAPH FraudLens()
+
+USE GRAPH FraudLens
+
+-- ============================================================
+-- VERTEX TYPES
+-- ============================================================
+
+-- Customer vertex
+CREATE VERTEX Customer (
+    PRIMARY_ID customer_id STRING,
+    email_domain  STRING DEFAULT "",
+    home_region   STRING DEFAULT "",
+    first_seen    DATETIME,
+    last_seen     DATETIME
+) WITH primary_id_as_attribute="true"
+
+-- Card vertex (each card1-card6 combination = unique card identity)
+CREATE VERTEX Card (
+    PRIMARY_ID card_id   STRING,   -- hash of card1-card6 values
+    card1        STRING DEFAULT "",
+    card2        STRING DEFAULT "",
+    card3        STRING DEFAULT "",
+    card4        STRING DEFAULT "",  -- debit/credit
+    card5        STRING DEFAULT "",
+    card6        STRING DEFAULT "",  -- charge/deferred debit etc
+    network      STRING DEFAULT "",
+    card_type    STRING DEFAULT ""
+) WITH primary_id_as_attribute="true"
+
+-- Transaction vertex
+CREATE VERTEX Transaction (
+    PRIMARY_ID transaction_id  STRING,
+    ts                DATETIME,
+    amount            DOUBLE DEFAULT 0.0,
+    channel           STRING DEFAULT "",   -- W=web, S=store, H=home
+    product_cd        STRING DEFAULT "",
+    risk_score        DOUBLE DEFAULT 0.0,
+    is_fraud          INT    DEFAULT 0,
+    dist1             DOUBLE DEFAULT 0.0,
+    dist2             DOUBLE DEFAULT 0.0,
+    p_emaildomain     STRING DEFAULT ""
+) WITH primary_id_as_attribute="true"
+
+-- Device Profile vertex (fingerprint from identity.csv)
+CREATE VERTEX DeviceProfile (
+    PRIMARY_ID profile_id   STRING,  -- hash(DeviceInfo + OS + browser + screen)
+    device_type  STRING DEFAULT "",
+    device_info  STRING DEFAULT "",
+    os           STRING DEFAULT "",
+    browser      STRING DEFAULT "",
+    screen       STRING DEFAULT "",
+    proxy_flag   BOOL   DEFAULT false
+) WITH primary_id_as_attribute="true"
+
+-- Email Domain vertex
+CREATE VERTEX EmailDomain (
+    PRIMARY_ID domain STRING
+) WITH primary_id_as_attribute="true"
+
+-- Billing Region vertex
+CREATE VERTEX BillingRegion (
+    PRIMARY_ID region_code  STRING,
+    country_code STRING DEFAULT ""
+) WITH primary_id_as_attribute="true"
+
+-- Closed Case (historical fraud case memory)
+CREATE VERTEX ClosedCase (
+    PRIMARY_ID case_id       STRING,
+    outcome          STRING DEFAULT "",   -- fraud/cleared/escalated
+    pattern          STRING DEFAULT "",   -- fraud pattern enum
+    exposure_usd     DOUBLE DEFAULT 0.0,
+    actions_taken    STRING DEFAULT "",   -- JSON list of actions
+    analyst_notes    STRING DEFAULT "",   -- for vector embedding
+    opened_at        DATETIME,
+    closed_at        DATETIME
+) WITH primary_id_as_attribute="true"
+
+-- Fraud Case (new cases created by the agent)
+CREATE VERTEX FraudCase (
+    PRIMARY_ID case_id        STRING,
+    trigger_type      STRING DEFAULT "",
+    status            STRING DEFAULT "TRIGGERED",
+    fraud_probability DOUBLE DEFAULT 0.0,
+    confidence        DOUBLE DEFAULT 0.0,
+    risk_level        STRING DEFAULT "",
+    pattern           STRING DEFAULT "",
+    final_verdict     STRING DEFAULT "",
+    created_at        DATETIME,
+    updated_at        DATETIME,
+    case_json         STRING DEFAULT ""   -- Full case record serialized as JSON
+) WITH primary_id_as_attribute="true"
+
+-- ============================================================
+-- EDGE TYPES
+-- ============================================================
+
+-- Customer owns Card
+CREATE DIRECTED EDGE OWNS (FROM Customer, TO Card,
+    since DATETIME
+)
+
+-- Card made Transaction
+CREATE DIRECTED EDGE MADE (FROM Card, TO Transaction,
+    ts DATETIME
+)
+
+-- Transaction from DeviceProfile
+CREATE DIRECTED EDGE FROM_DEVICE (FROM Transaction, TO DeviceProfile,
+    is_new_device BOOL DEFAULT false
+)
+
+-- Transaction purchaser email domain
+CREATE DIRECTED EDGE PURCHASER_EMAIL (FROM Transaction, TO EmailDomain)
+
+-- Transaction billed in region
+CREATE DIRECTED EDGE BILLED_IN (FROM Transaction, TO BillingRegion)
+
+-- Transaction → next Transaction (temporal chain)
+CREATE DIRECTED EDGE NEXT (FROM Transaction, TO Transaction,
+    gap_seconds INT DEFAULT 0
+)
+
+-- ClosedCase involves Transaction
+CREATE DIRECTED EDGE INVOLVES (FROM ClosedCase, TO Transaction,
+    role STRING DEFAULT ""
+)
+
+-- ClosedCase on Card
+CREATE DIRECTED EDGE ON_CARD (FROM ClosedCase, TO Card)
+
+-- ClosedCase connected to another Card (ring member)
+CREATE DIRECTED EDGE CONNECTED_TO (FROM ClosedCase, TO Card,
+    connection_type STRING DEFAULT ""
+)
+
+-- Card shares device with Card (undirected)
+CREATE UNDIRECTED EDGE SHARED_DEVICE (FROM Card, TO Card,
+    device_profile_id STRING DEFAULT "",
+    first_seen        DATETIME
+)
+
+-- Transaction investigated in FraudCase
+CREATE DIRECTED EDGE INVESTIGATED_IN (FROM Transaction, TO FraudCase)
+
+-- FraudCase targets Card
+CREATE DIRECTED EDGE TARGETS (FROM FraudCase, TO Card)
+
+-- FraudCase involves Customer
+CREATE DIRECTED EDGE CASE_INVOLVES_CUSTOMER (FROM FraudCase, TO Customer)

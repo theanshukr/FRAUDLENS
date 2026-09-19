@@ -1,0 +1,46 @@
+-- ============================================================
+-- FraudLens Query: detect_card_testing
+-- Detects micro-auth burst before a larger purchase
+-- ============================================================
+
+USE GRAPH FraudLens
+
+CREATE OR REPLACE QUERY detect_card_testing(STRING card_id, INT hours) FOR GRAPH FraudLens
+SYNTAX V2 {
+    /*
+     * Card Testing Pattern:
+     *   - Multiple small transactions (< $5) in short window
+     *   - Followed by a larger transaction
+     *   - Signal: attacker testing card validity before big fraud
+     *
+     * Returns: Suspicious transaction sequences
+     */
+
+    DATETIME cutoff = datetime_sub(now(), INTERVAL hours HOUR);
+    SumAccum<INT>    @small_txn_count;
+    MaxAccum<DOUBLE> @max_amount;
+    SetAccum<VERTEX<Transaction>> @@suspicious_txns;
+
+    card_v = {Card.*};
+    txns   = SELECT t FROM card_v:c - (MADE:e) - Transaction:t
+             WHERE c.card_id == card_id
+               AND t.ts >= cutoff;
+
+    -- Flag small transactions (potential test charges)
+    small = SELECT t FROM txns:t
+            WHERE t.amount < 5.0
+            ACCUM @@suspicious_txns += t;
+
+    -- Check if followed by large transaction in same window
+    large = SELECT t FROM txns:t
+            WHERE t.amount > 100.0
+            ACCUM @@suspicious_txns += t;
+
+    -- Return card_testing signal if both small + large exist
+    result = SELECT c FROM card_v:c
+             WHERE c.card_id == card_id;
+
+    PRINT @@suspicious_txns;
+    PRINT small.size() > 0 AND large.size() > 0 AS card_testing_detected;
+}
+INSTALL QUERY detect_card_testing

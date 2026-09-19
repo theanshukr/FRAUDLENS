@@ -1,0 +1,10 @@
+-- FraudLens Query: get_billing_region_cards
+USE GRAPH FraudLens
+CREATE OR REPLACE QUERY get_billing_region_cards(STRING region_code, INT days) FOR GRAPH FraudLens SYNTAX V2 {
+    DATETIME cutoff = datetime_sub(now(), INTERVAL days DAY);
+    region_v = {BillingRegion.*};
+    cards = SELECT c FROM region_v:r-(BILLED_IN:e1)-Transaction:t-(MADE:e2)-Card:c
+            WHERE r.region_code == region_code AND t.ts >= cutoff;
+    PRINT cards;
+}
+INSTALL QUERY get_billing_region_cards

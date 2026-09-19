@@ -1,0 +1,10 @@
+-- FraudLens Query: get_customer_transactions
+USE GRAPH FraudLens
+CREATE OR REPLACE QUERY get_customer_transactions(STRING customer_id, INT lim) FOR GRAPH FraudLens SYNTAX V2 {
+    customer_v = {Customer.*};
+    txns = SELECT t FROM customer_v:cu-(OWNS:e1)-Card:c-(MADE:e2)-Transaction:t
+           WHERE cu.customer_id == customer_id
+           ORDER BY t.ts DESC LIMIT lim;
+    PRINT txns;
+}
+INSTALL QUERY get_customer_transactions

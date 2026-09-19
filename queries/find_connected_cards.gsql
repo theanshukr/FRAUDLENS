@@ -1,0 +1,34 @@
+-- ============================================================
+-- FraudLens Query: find_connected_cards
+-- Multi-hop card connection discovery (fraud ring detection)
+-- ============================================================
+
+USE GRAPH FraudLens
+
+CREATE OR REPLACE QUERY find_connected_cards(STRING card_id, INT hops) FOR GRAPH FraudLens
+SYNTAX V2 {
+    /*
+     * Returns: All cards connected to this card within N hops via shared devices
+     * hops=1: direct device-sharing
+     * hops=2: indirect connection via intermediary card
+     * Used to map fraud ring membership
+     */
+
+    OrAccum         @visited;
+    SetAccum<EDGE>  @@path_edges;
+    SetAccum<VERTEX<Card>> @@ring_members;
+
+    seed = {Card.*};
+    start = SELECT c FROM seed:c WHERE c.card_id == card_id POST-ACCUM c.@visited = true;
+
+    FOREACH i IN RANGE[1, hops] DO
+        frontier = SELECT c2
+                   FROM start:c1 - (SHARED_DEVICE:e) - Card:c2
+                   WHERE NOT c2.@visited
+                   ACCUM c2.@visited = true, @@ring_members += c2, @@path_edges += e;
+        start = frontier;
+    END;
+
+    PRINT @@ring_members, @@path_edges;
+}
+INSTALL QUERY find_connected_cards

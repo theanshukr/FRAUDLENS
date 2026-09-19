@@ -1,0 +1,40 @@
+-- ============================================================
+-- FraudLens Query: get_transaction
+-- Returns full transaction + identity details for a given ID
+-- ============================================================
+
+USE GRAPH FraudLens
+
+CREATE OR REPLACE QUERY get_transaction(STRING txn_id) FOR GRAPH FraudLens
+SYNTAX V2 {
+    /*
+     * Returns: Transaction vertex attrs + linked Card + DeviceProfile + EmailDomain + BillingRegion
+     * Usage: agent calls this as first step of any investigation
+     */
+
+    SumAccum<INT>     @dummy;
+    SetAccum<VERTEX>  @@results;
+
+    seed = {Transaction.*};
+    txn  = SELECT t FROM seed:t WHERE t.transaction_id == txn_id
+           ACCUM @@results += t;
+
+    -- Card that made this transaction
+    card = SELECT c FROM txn:t - (MADE:e) - Card:c
+           ACCUM @@results += c;
+
+    -- Device used in this transaction
+    device = SELECT d FROM txn:t - (FROM_DEVICE:e) - DeviceProfile:d
+             ACCUM @@results += d;
+
+    -- Email domain
+    email = SELECT e FROM txn:t - (PURCHASER_EMAIL:r) - EmailDomain:e
+            ACCUM @@results += e;
+
+    -- Billing region
+    region = SELECT r FROM txn:t - (BILLED_IN:b) - BillingRegion:r
+             ACCUM @@results += r;
+
+    PRINT @@results;
+}
+INSTALL QUERY get_transaction

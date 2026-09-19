@@ -1,0 +1,9 @@
+-- FraudLens Query: detect_new_device_usage
+USE GRAPH FraudLens
+CREATE OR REPLACE QUERY detect_new_device_usage(STRING card_id) FOR GRAPH FraudLens SYNTAX V2 {
+    card_v = {Card.*};
+    new_device_txns = SELECT t FROM card_v:c-(MADE:e1)-Transaction:t-(FROM_DEVICE:e2)-DeviceProfile:d
+                      WHERE c.card_id == card_id AND e2.is_new_device == true;
+    PRINT new_device_txns;
+}
+INSTALL QUERY detect_new_device_usage

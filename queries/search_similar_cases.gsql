@@ -1,0 +1,55 @@
+-- ============================================================
+-- FraudLens Query: search_similar_cases
+-- GraphRAG: find historically similar fraud cases
+-- ============================================================
+
+USE GRAPH FraudLens
+
+CREATE OR REPLACE QUERY search_similar_cases(
+    STRING pattern,
+    STRING device_profile_id,
+    SET<STRING> card_ids
+) FOR GRAPH FraudLens
+SYNTAX V2 {
+    /*
+     * Returns: Closed cases that match by:
+     *   1. Same fraud pattern
+     *   2. Same device profile (shared device overlap)
+     *   3. Same card involved
+     * Ranked by number of matching signals
+     *
+     * NOTE: For semantic similarity on analyst_notes, use the
+     * TigerGraph vector store endpoint separately (GraphRAG).
+     */
+
+    SumAccum<INT>   @match_score;
+    SetAccum<VERTEX<ClosedCase>> @@similar_cases;
+
+    all_cases = {ClosedCase.*};
+
+    -- Match by pattern
+    pattern_matches = SELECT cc FROM all_cases:cc
+                      WHERE cc.pattern == pattern
+                      ACCUM cc.@match_score += 3;   -- highest weight
+
+    -- Match by shared device (via ON_CARD edge → card → device)
+    device_matches = SELECT cc FROM all_cases:cc - (ON_CARD:e) - Card:c
+                                                  - (MADE:e2) - Transaction:t
+                                                  - (FROM_DEVICE:e3) - DeviceProfile:d
+                     WHERE d.profile_id == device_profile_id
+                     ACCUM cc.@match_score += 2;
+
+    -- Match by card overlap
+    card_matches = SELECT cc FROM all_cases:cc - (ON_CARD:e) - Card:c
+                   WHERE c.card_id IN card_ids
+                   ACCUM cc.@match_score += 1;
+
+    -- Return top cases with score > 0
+    results = SELECT cc FROM all_cases:cc
+              WHERE cc.@match_score > 0
+              ORDER BY cc.@match_score DESC
+              LIMIT 5;
+
+    PRINT results;
+}
+INSTALL QUERY search_similar_cases

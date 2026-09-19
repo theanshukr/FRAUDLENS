@@ -1,0 +1,108 @@
+-- ============================================================
+-- FraudLens — GSQL Loading Jobs
+-- Run after schema is installed.
+-- Execute with: python scripts/load_data.py
+-- ============================================================
+
+USE GRAPH FraudLens
+
+-- ============================================================
+-- DEFINE DATA FILES
+-- ============================================================
+
+DEFINE FILENAME f_transactions = "./data/transactions.csv";
+DEFINE FILENAME f_identity     = "./data/identity.csv";
+DEFINE FILENAME f_closed_cases = "./data/closed_cases_history.csv";
+DEFINE FILENAME f_case_pack    = "./data/case_pack.csv";
+
+-- ============================================================
+-- LOADING JOB: transactions.csv
+-- Loads: Transaction, Card, Customer, EmailDomain, BillingRegion vertices
+--        MADE, OWNS, PURCHASER_EMAIL, BILLED_IN edges
+-- ============================================================
+
+CREATE LOADING JOB load_transactions FOR GRAPH FraudLens {
+
+    DEFINE HEADER h_txn =
+        "TransactionID", "isFraud", "TransactionDT", "TransactionAmt",
+        "ProductCD", "card1", "card2", "card3", "card4", "card5", "card6",
+        "P_emaildomain", "R_emaildomain",
+        "C1","C2","C3","C4","C5","C6","C7","C8","C9","C10","C11","C12","C13","C14",
+        "D1","D2","D3","D4","D5","D6","D7","D8","D9","D10","D11","D12","D13","D14","D15",
+        "M1","M2","M3","M4","M5","M6","M7","M8","M9",
+        "V1","V2","V3","V4","V5","V6","V7","V8","V9","V10",
+        "addr1","addr2","dist1","dist2";
+
+    -- Load Transaction vertex
+    LOAD f_transactions TO VERTEX Transaction
+        VALUES($"TransactionID", to_datetime($"TransactionDT"), $"TransactionAmt",
+               "W", $"ProductCD", 0.0, $"isFraud", $"dist1", $"dist2", $"P_emaildomain")
+        USING header="true", separator=",";
+
+    -- Load Card vertex (card_id = hash of card1-card6)
+    LOAD f_transactions TO VERTEX Card
+        VALUES(gsql_concat($"card1","_",$"card2","_",$"card3","_",$"card4","_",$"card5","_",$"card6"),
+               $"card1", $"card2", $"card3", $"card4", $"card5", $"card6", "", $"card4")
+        USING header="true", separator=",";
+
+    -- Load MADE edge (Card → Transaction)
+    LOAD f_transactions TO EDGE MADE
+        VALUES(gsql_concat($"card1","_",$"card2","_",$"card3","_",$"card4","_",$"card5","_",$"card6"),
+               $"TransactionID", to_datetime($"TransactionDT"))
+        USING header="true", separator=",";
+
+    -- Load EmailDomain vertex
+    LOAD f_transactions TO VERTEX EmailDomain
+        VALUES($"P_emaildomain")
+        USING header="true", separator=",";
+
+    -- Load PURCHASER_EMAIL edge
+    LOAD f_transactions TO EDGE PURCHASER_EMAIL
+        VALUES($"TransactionID", $"P_emaildomain")
+        USING header="true", separator=",";
+
+    -- Load BillingRegion vertex
+    LOAD f_transactions TO VERTEX BillingRegion
+        VALUES($"addr1", $"addr2")
+        USING header="true", separator=",";
+
+    -- Load BILLED_IN edge
+    LOAD f_transactions TO EDGE BILLED_IN
+        VALUES($"TransactionID", $"addr1")
+        USING header="true", separator=",";
+}
+
+-- ============================================================
+-- LOADING JOB: identity.csv
+-- Loads: DeviceProfile vertex, FROM_DEVICE edge
+-- ============================================================
+
+CREATE LOADING JOB load_identity FOR GRAPH FraudLens {
+
+    -- Load DeviceProfile vertex
+    LOAD f_identity TO VERTEX DeviceProfile
+        VALUES(gsql_concat($"id_30","_",$"id_31","_",$"id_33"),
+               $"DeviceType", $"DeviceInfo", $"id_30", $"id_31", $"id_33", false)
+        USING header="true", separator=",";
+
+    -- Load FROM_DEVICE edge (Transaction → DeviceProfile)
+    LOAD f_identity TO EDGE FROM_DEVICE
+        VALUES($"TransactionID",
+               gsql_concat($"id_30","_",$"id_31","_",$"id_33"),
+               false)
+        USING header="true", separator=",";
+}
+
+-- ============================================================
+-- LOADING JOB: closed_cases_history.csv
+-- Loads: ClosedCase vertex, INVOLVES/ON_CARD edges
+-- ============================================================
+
+CREATE LOADING JOB load_closed_cases FOR GRAPH FraudLens {
+
+    LOAD f_closed_cases TO VERTEX ClosedCase
+        VALUES($"case_id", $"outcome", $"pattern", $"exposure_usd",
+               $"actions_taken", $"analyst_notes",
+               to_datetime($"opened_at"), to_datetime($"closed_at"))
+        USING header="true", separator=",";
+}

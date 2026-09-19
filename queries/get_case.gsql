@@ -1,0 +1,8 @@
+-- FraudLens Query: get_case
+USE GRAPH FraudLens
+CREATE OR REPLACE QUERY get_case(STRING case_id) FOR GRAPH FraudLens SYNTAX V2 {
+    cases = {FraudCase.*};
+    result = SELECT c FROM cases:c WHERE c.case_id == case_id;
+    PRINT result;
+}
+INSTALL QUERY get_case

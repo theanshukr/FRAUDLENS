@@ -1,0 +1,50 @@
+# ============================================================
+# FraudLens — Python Dependencies
+# Python >= 3.11 required
+# Install: pip install -r requirements.txt
+# ============================================================
+
+# --- TigerGraph ---
+pyTigerGraph>=1.6.0
+tigergraph-mcp>=0.1.0          # TigerGraph MCP bridge
+
+# --- Agent Framework ---
+langgraph>=0.2.0
+langchain>=0.3.0
+langchain-openai>=0.2.0
+langchain-community>=0.3.0
+
+# --- LLM ---
+openai>=1.50.0
+
+# --- Backend ---
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+sse-starlette>=2.1.0           # Server-Sent Events for streaming
+httpx>=0.27.0
+
+# --- Data Validation ---
+pydantic>=2.9.0
+pydantic-settings>=2.5.0
+
+# --- Data Processing ---
+pandas>=2.2.0
+numpy>=2.1.0
+pyarrow>=17.0.0                # Fast CSV reading
+
+# --- Utilities ---
+python-dotenv>=1.0.0
+loguru>=0.7.0
+tenacity>=9.0.0                # Retry logic for API calls
+rich>=13.8.0                   # Beautiful terminal output
+
+# --- Vector / GraphRAG ---
+sentence-transformers>=3.2.0   # Embedding generation
+faiss-cpu>=1.8.0               # Local vector store (fallback)
+
+# --- Dev / Testing ---
+pytest>=8.3.0
+pytest-asyncio>=0.24.0
+httpx                          # also used for test client
+black>=24.8.0                  # Code formatter
+ruff>=0.6.0                    # Linter

@@ -1,0 +1,11 @@
+-- FraudLens Query: get_card_window
+USE GRAPH FraudLens
+CREATE OR REPLACE QUERY get_card_window(STRING card_id, INT hours) FOR GRAPH FraudLens SYNTAX V2 {
+    DATETIME cutoff = datetime_sub(now(), INTERVAL hours HOUR);
+    card_v = {Card.*};
+    txns = SELECT t FROM card_v:c-(MADE:e)-Transaction:t
+           WHERE c.card_id == card_id AND t.ts >= cutoff
+           ORDER BY t.ts ASC;
+    PRINT txns;
+}
+INSTALL QUERY get_card_window

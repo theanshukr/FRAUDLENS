@@ -1,0 +1,14 @@
+-- FraudLens Query: get_transaction_neighbors
+USE GRAPH FraudLens
+CREATE OR REPLACE QUERY get_transaction_neighbors(STRING txn_id, INT hops) FOR GRAPH FraudLens SYNTAX V2 {
+    OrAccum @visited;
+    SetAccum<VERTEX> @@neighbors;
+    seed = {Transaction.*};
+    start = SELECT t FROM seed:t WHERE t.transaction_id == txn_id POST-ACCUM t.@visited=true;
+    FOREACH i IN RANGE[1, hops] DO
+        next = SELECT v FROM start:s-(:e)-:v WHERE NOT v.@visited POST-ACCUM v.@visited=true, @@neighbors+=v;
+        start = next;
+    END;
+    PRINT @@neighbors;
+}
+INSTALL QUERY get_transaction_neighbors

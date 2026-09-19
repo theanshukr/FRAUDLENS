@@ -1,0 +1,32 @@
+-- ============================================================
+-- FraudLens Query: find_shared_devices
+-- Returns all other cards that share a device with this card
+-- ============================================================
+
+USE GRAPH FraudLens
+
+CREATE OR REPLACE QUERY find_shared_devices(STRING card_id) FOR GRAPH FraudLens
+SYNTAX V2 {
+    /*
+     * Returns: Connected cards via shared device + device profile info
+     * Used to detect: same device used by multiple accounts (fraud ring signal)
+     */
+
+    SetAccum<VERTEX<DeviceProfile>> @@devices;
+    SetAccum<VERTEX<Card>>          @@connected_cards;
+
+    card_v = {Card.*};
+    seed   = SELECT c FROM card_v:c WHERE c.card_id == card_id;
+
+    -- Devices used by transactions of this card
+    devices = SELECT d FROM seed:c - (MADE:e1) - Transaction:t - (FROM_DEVICE:e2) - DeviceProfile:d
+              ACCUM @@devices += d;
+
+    -- Other cards that used same devices
+    other_cards = SELECT c2 FROM @@devices:d - (FROM_DEVICE:e) - Transaction:t - (MADE:e2) - Card:c2
+                  WHERE c2.card_id != card_id
+                  ACCUM @@connected_cards += c2;
+
+    PRINT @@devices, @@connected_cards;
+}
+INSTALL QUERY find_shared_devices
