@@ -41,6 +41,7 @@ venv.bak/
 # --- Data Files (large CSVs — never commit) ---
 data/
 !data/.gitkeep
+docs/databasefiles/
 
 # --- Node / Frontend ---
 node_modules/
