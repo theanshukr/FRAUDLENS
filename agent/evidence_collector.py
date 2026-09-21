@@ -1,5 +1,5 @@
 """
-FraudLens — Evidence Collector
+FraudLens     Evidence Collector
 ================================
 Executes investigation plan steps via TigerGraph MCP tools and
 structures each finding as a typed EvidenceItem.
@@ -31,7 +31,7 @@ class EvidenceItem(BaseModel):
     """A single piece of evidence discovered during investigation."""
 
     evidence_id: str = Field(description="Unique ID for this evidence item")
-    claim: str = Field(description="What was found — plain English statement")
+    claim: str = Field(description="What was found     plain English statement")
     source: Literal["graph", "document", "customer", "external"] = Field(
         description="Where this evidence came from"
     )
@@ -110,7 +110,7 @@ class EvidenceCollector:
                 result = await self._execute_step(step)
                 items  = self._parse_result(step, result)
                 evidence.extend(items)
-                logger.info(f"  → {len(items)} evidence items from {step.query_name}")
+                logger.info(f"      {len(items)} evidence items from {step.query_name}")
             except Exception as e:
                 logger.warning(f"Step {step.step_id} failed: {e}")
                 # Add a "no data" evidence item so gap is visible
@@ -145,7 +145,7 @@ class EvidenceCollector:
         # Stub: return generic evidence item
         return [EvidenceItem(
             evidence_id=self._next_id(),
-            claim=f"Query {step.query_name} completed — {len(result.get('results', []))} results found",
+            claim=f"Query {step.query_name} completed     {len(result.get('results', []))} results found",
             source="graph",
             ref=step.query_name,
             entity_ids=result.get("entity_ids", []),

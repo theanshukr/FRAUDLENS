@@ -1,5 +1,5 @@
 """
-FraudLens — Risk Assessor
+FraudLens     Risk Assessor
 ==========================
 Analyzes collected evidence to produce a structured risk assessment.
 
@@ -58,12 +58,12 @@ FRAUD_PATTERNS = {
 class RiskAssessment(BaseModel):
     """Complete risk assessment output from the risk assessor."""
 
-    # Core risk metrics (SEPARATE — critical requirement)
+    # Core risk metrics (SEPARATE     critical requirement)
     risk_level: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
     fraud_probability: float = Field(ge=0.0, le=1.0,
         description="Probability that this is fraud (0.0-1.0)")
     confidence: float = Field(ge=0.0, le=1.0,
-        description="Confidence in this assessment — separate from fraud probability")
+        description="Confidence in this assessment     separate from fraud probability")
 
     # Evidence quality
     evidence_sufficiency: Literal["LOW", "MEDIUM", "HIGH"]

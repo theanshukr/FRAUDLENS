@@ -87,3 +87,5 @@ logs/
 .LSOverride
 Desktop.ini
 $RECYCLE.BIN/
+
+dataset/

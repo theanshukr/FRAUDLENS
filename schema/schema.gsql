@@ -90,6 +90,11 @@ CREATE VERTEX ClosedCase (
 CREATE VERTEX FraudCase (
     PRIMARY_ID case_id        STRING,
     trigger_type      STRING DEFAULT "",
+    trigger_text      STRING DEFAULT "",
+    flagged_txn_id    STRING DEFAULT "",
+    card_id           STRING DEFAULT "",
+    customer_id       STRING DEFAULT "",
+    risk_score        DOUBLE DEFAULT 0.0,
     status            STRING DEFAULT "TRIGGERED",
     fraud_probability DOUBLE DEFAULT 0.0,
     confidence        DOUBLE DEFAULT 0.0,

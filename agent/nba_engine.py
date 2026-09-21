@@ -1,5 +1,5 @@
 """
-FraudLens — Next-Best-Action Engine
+FraudLens     Next-Best-Action Engine
 =====================================
 Generates ordered policy-aware action recommendations.
 
@@ -197,7 +197,7 @@ class NBAEngine:
         if assessment.fraud_probability < 0.15:
             supplementary.append((
                 "ALLOW_TRANSACTION",
-                "Low fraud probability — transaction appears legitimate",
+                "Low fraud probability     transaction appears legitimate",
                 "R_CLEAR",
             ))
 
@@ -227,11 +227,11 @@ class NBAEngine:
         lines = [
             f"New evidence: '{new_evidence_claim}'",
             f"",
-            f"Risk changed: {initial_assessment.risk_level} → {final_assessment.risk_level}",
-            f"Fraud probability: {initial_assessment.fraud_probability:.0%} → {final_assessment.fraud_probability:.0%} "
-            f"({'↑' if prob_delta > 0 else '↓'}{abs(prob_delta):.0%})",
-            f"Confidence: {initial_assessment.confidence:.0%} → {final_assessment.confidence:.0%} "
-            f"({'↑' if conf_delta > 0 else '↓'}{abs(conf_delta):.0%})",
+            f"Risk changed: {initial_assessment.risk_level}     {final_assessment.risk_level}",
+            f"Fraud probability: {initial_assessment.fraud_probability:.0%}     {final_assessment.fraud_probability:.0%} "
+            f"({'   ' if prob_delta > 0 else '   '}{abs(prob_delta):.0%})",
+            f"Confidence: {initial_assessment.confidence:.0%}     {final_assessment.confidence:.0%} "
+            f"({'   ' if conf_delta > 0 else '   '}{abs(conf_delta):.0%})",
         ]
 
         if added:

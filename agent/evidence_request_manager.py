@@ -1,5 +1,5 @@
 """
-FraudLens — Evidence Request Manager
+FraudLens     Evidence Request Manager
 ======================================
 When the risk assessment determines that evidence is insufficient
 (sufficient_to_act = False), this module determines:
@@ -10,10 +10,10 @@ When the risk assessment determines that evidence is insufficient
   4. New EvidenceItem from the simulated response
 
 Evidence request types:
-  - customer_validation   → Contact customer to verify transaction
-  - step_up_auth          → Require additional authentication
-  - analyst_info          → Request analyst domain knowledge
-  - external_data         → Request external data source query
+  - customer_validation       Contact customer to verify transaction
+  - step_up_auth              Require additional authentication
+  - analyst_info              Request analyst domain knowledge
+  - external_data             Request external data source query
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ class EvidenceRequest(BaseModel):
 
     request_id: str
     request_type: Literal["customer_validation", "step_up_auth", "analyst_info", "external_data"]
-    target: str = Field(description="Who/what to ask — customer, analyst, system")
+    target: str = Field(description="Who/what to ask     customer, analyst, system")
     question: str = Field(description="What specifically to ask")
     reason: str = Field(description="Why we need this evidence")
     policy_basis: str = Field(description="Policy rule that justifies this request (e.g., R2)")
@@ -77,7 +77,7 @@ class EvidenceRequestManager:
         """
         # Don't request more than 2 rounds of evidence
         if request_count >= 2:
-            logger.info("Max evidence request rounds reached — proceeding without more evidence")
+            logger.info("Max evidence request rounds reached     proceeding without more evidence")
             return None
 
         # Choose request type based on missing evidence and pattern
@@ -115,7 +115,7 @@ class EvidenceRequestManager:
                     0.90,
                 ),
                 "step_up_auth": (
-                    "Step-up authentication failed — customer could not verify identity.",
+                    "Step-up authentication failed     customer could not verify identity.",
                     True,
                     0.85,
                 ),
@@ -132,7 +132,7 @@ class EvidenceRequestManager:
                     0.85,
                 ),
                 "step_up_auth": (
-                    "Step-up authentication passed — customer verified identity successfully.",
+                    "Step-up authentication passed     customer verified identity successfully.",
                     False,
                     0.90,
                 ),
@@ -206,14 +206,14 @@ class EvidenceRequestManager:
                     f"Transaction shows {assessment.pattern} indicators. "
                     f"Customer confirmation required to distinguish fraud from legitimate use."
                 ),
-                "policy_basis": "R2 — Customer validation required when fraud_probability > 0.40",
+                "policy_basis": "R2     Customer validation required when fraud_probability > 0.40",
                 "assumed_response": "Customer denies transaction (simulated for demo)",
             },
             "step_up_auth": {
-                "target": "Customer — Authentication System",
+                "target": "Customer     Authentication System",
                 "question": "Please complete additional identity verification (OTP or biometric).",
                 "reason": f"Pattern {assessment.pattern} detected. Step-up auth required per policy.",
-                "policy_basis": "R5 — Step-up auth required for high-velocity or new-device patterns",
+                "policy_basis": "R5     Step-up auth required for high-velocity or new-device patterns",
                 "assumed_response": "Step-up auth failed (simulated for demo)",
             },
             "analyst_info": {
@@ -223,7 +223,7 @@ class EvidenceRequestManager:
                     f"Are there known fraud rings using this device profile?"
                 ),
                 "reason": "Complex shared-device ring pattern requires analyst domain knowledge.",
-                "policy_basis": "R7 — Analyst review required for organized fraud ring patterns",
+                "policy_basis": "R7     Analyst review required for organized fraud ring patterns",
                 "assumed_response": "Analyst confirms fraud ring pattern (simulated for demo)",
             },
         }

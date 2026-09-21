@@ -1,5 +1,5 @@
 """
-FraudLens — Load Schema Script
+FraudLens     Load Schema Script
 ================================
 Installs the TigerGraph graph schema and creates loading jobs.
 

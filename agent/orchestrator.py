@@ -1,48 +1,48 @@
 """
-FraudLens — Agent Orchestrator
+FraudLens     Agent Orchestrator
 ================================
 LangGraph state machine implementing the full investigation loop.
 
 Investigation Flow:
   START
-    │
-    ▼
+       
+       
   [plan_investigation]
-    │
-    ▼
-  [collect_evidence] ◄─────────────────┐
-    │                                  │
-    ▼                                  │
-  [retrieve_similar_cases]             │
-    │                                  │
-    ▼                                  │
-  [assess_risk]                        │
-    │                                  │
-    ▼                                  │
-  [check_stop_condition]               │
-    │                                  │
-    ├── STOP ──► [recommend_nba]       │
-    │                                  │
-    └── CONTINUE ──► [request_evidence]│
-                          │            │
-                          ▼            │
-                    [receive_evidence] │
-                          │            │
-                          └────────────┘ (re-investigate)
-    │
-    ▼
+       
+       
+  [collect_evidence]  -                                                       
+                                            
+                                            
+  [retrieve_similar_cases]                
+                                            
+                                            
+  [assess_risk]                           
+                                            
+                                            
+  [check_stop_condition]                  
+                                            
+              STOP           [recommend_nba]          
+                                            
+              CONTINUE           [request_evidence]   
+                                            
+                                            
+                    [receive_evidence]    
+                                            
+                                                                     (re-investigate)
+       
+       
   [apply_policy]
-    │
-    ▼
+       
+       
   [determine_approval]
-    │
-    ▼
+       
+       
   [explain_decision]
-    │
-    ▼
+       
+       
   [write_case_to_graph]
-    │
-    ▼
+       
+       
   END
 """
 
@@ -175,7 +175,7 @@ class Orchestrator:
         yield self._event("step", "Building investigation plan", step="plan_investigation")
 
         state.plan = build_investigation_plan(trigger_type, txn_id, card_id, customer_id)
-        yield self._event("step", f"Plan ready — {len(state.plan.steps)} steps", step="plan_complete", status="done")
+        yield self._event("step", f"Plan ready     {len(state.plan.steps)} steps", step="plan_complete", status="done")
 
         # --- Main Investigation Loop ---
         evidence_request_count = 0
@@ -242,7 +242,7 @@ class Orchestrator:
 
             # --- Request Evidence ---
             self.case_manager.transition(case, CaseStatus.AWAITING_EVIDENCE, "Requesting additional evidence")
-            yield self._event("step", "Evidence insufficient — requesting more", step="request_evidence", status="warning")
+            yield self._event("step", "Evidence insufficient     requesting more", step="request_evidence", status="warning")
 
             ev_request = self.req_manager.determine_request(
                 assessment, state.evidence, evidence_request_count
@@ -263,7 +263,7 @@ class Orchestrator:
             )
 
             # --- Receive Simulated Evidence ---
-            self.case_manager.transition(case, CaseStatus.REASSESSING, "New evidence received — reassessing")
+            self.case_manager.transition(case, CaseStatus.REASSESSING, "New evidence received     reassessing")
             simulated = self.req_manager.simulate_response(ev_request, scenario="deny")
             state.evidence.append(simulated)
             self.case_manager.append_evidence(case, [simulated])
