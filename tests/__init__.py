@@ -1,5 +1,5 @@
 """
-FraudLens — Tests
+FraudLens â€” Tests
 ==================
 Run with: pytest tests/ -v
 """

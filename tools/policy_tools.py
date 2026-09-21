@@ -1,5 +1,5 @@
 """
-FraudLens — Policy Tools
+FraudLens â€” Policy Tools
 =========================
 MCP tool wrappers for policy engine functions.
 Exposes policy rules as callable MCP tools for the agent.

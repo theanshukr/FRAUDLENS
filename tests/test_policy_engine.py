@@ -1,5 +1,5 @@
 """
-FraudLens — Policy Engine Tests
+FraudLens â€” Policy Engine Tests
 """
 import pytest
 from policy.rules import (
