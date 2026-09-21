@@ -1,9 +1,24 @@
 # FraudLens — Development Phases
 
-> **Version:** 1.0  
+> **Version:** 1.1 *(Updated: 2026-09-21 — Phase 0 progress review)*  
 > **Project:** FraudLens — AI Agentic Fraud Investigation Platform  
 > **Hackathon:** TigerGraph × Hacker House Goa 2026  
 > **Total Estimated Duration:** 8–10 days (hackathon sprint)
+
+---
+
+## 📊 Current Status
+
+| Phase | Status | Notes |
+|---|---|---|
+| **Phase 0** — Environment & Data Setup | 🟡 In Progress | Core structure done; TigerGraph connection pending |
+| **Phase 1** — Graph Construction | ⬜ Not Started | Schema + loading jobs drafted; needs live DB |
+| **Phase 2** — Agent Orchestration | ⬜ Not Started | Skeleton files exist; core logic not yet complete |
+| **Phase 3** — Backend API | ⬜ Not Started | FastAPI `main.py` scaffolded |
+| **Phase 4** — Frontend UI | ⬜ Not Started | — |
+| **Phase 5** — Integration & Demo | ⬜ Not Started | — |
+
+> **Last reviewed from branch:** `kanav-backend-updates` (commit `b47af67`, Kanav-prog)
 
 ---
 
@@ -29,10 +44,10 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5
 - [ ] Create TigerGraph Savanna workspace at [savanna.tgcloud.io](https://savanna.tgcloud.io) (or install Community Edition)
   - Enable auto-stop and auto-start on Savanna
   - Note workspace URL, graph name, credentials
-- [ ] Set up Python virtual environment (`venv` or `conda`)
-- [ ] Initialize Git repository with `.gitignore`
-- [ ] Create project folder structure (see below)
-- [ ] Set up `.env` file with all secrets (never committed)
+- [x] Set up Python virtual environment (`venv` or `conda`) ✅
+- [x] Initialize Git repository with `.gitignore` ✅
+- [x] Create project folder structure (see below) ✅
+- [x] Set up `.env` file with all secrets (never committed) ✅ (`.env.example` committed, `.env` gitignored)
 
 ### 0.2 Project Folder Structure
 
@@ -96,8 +111,9 @@ fraudlens/
   - `identity.csv` (~144,432 rows)
   - `closed_cases_history.csv` (~5,565 rows)
   - `case_pack.csv` (20 benchmark cases)
+- [x] **Dataset samples added** (`dataset_sample/` folder with 100-row samples of each CSV + full `case_pack.csv` with all 20 HHG-001→HHG-020 cases) ✅ — by Kanav
 - [ ] Validate CSV headers match the dataset README column definitions
-- [ ] Run basic row count checks; confirm no truncation
+- [ ] Run basic row count checks on full dataset; confirm no truncation
 - [ ] Profile key columns: `risk_score`, `customer_id`, `channel`, `card1`–`card6`, `DeviceInfo`, `addr1`
 
 ### 0.4 Dependencies
@@ -129,8 +145,22 @@ loguru
 
 - [ ] TigerGraph instance is accessible via pyTigerGraph
 - [ ] All 4 CSVs downloaded and row-count validated
-- [ ] Git repo initialized with proper `.gitignore`
-- [ ] `.env.example` committed; `.env` gitignored
+- [x] Git repo initialized with proper `.gitignore` ✅
+- [x] `.env.example` committed; `.env` gitignored ✅
+
+### Phase 0 — Work Completed (by branch `kanav-backend-updates`)
+
+> The following items were completed by teammate **Kanav** in commit `b47af67`.
+> ⚠️ **Pending merge review:** Two issues must be fixed before merging:
+> 1. Unicode characters (`—`, `→`, `↑`, `↓`, box-drawing) were corrupted to spaces across 10+ files — needs a fix pass.
+> 2. `tests/test_policy_engine.py` was accidentally emptied — tests need to be restored.
+
+- [x] `dataset_sample/` folder added with 100-row CSVs and all 20 `case_pack.csv` benchmark cases ✅
+- [x] `schema/schema.gsql` — `FraudCase` vertex enriched with `trigger_text`, `flagged_txn_id`, `card_id`, `customer_id`, `risk_score` fields ✅
+- [x] `schema/loading_jobs.gsql` — column name fixes (`ts`, `channel`, `risk_score`), added `Customer` vertex + `OWNS` edge loading, added `load_case_pack` job ✅
+- [x] `tools/graph_tools.py` — defensive `Optional` TigerGraph connection (no crash when DB not configured) ✅
+- [x] Backend `main.py` FastAPI skeleton scaffolded ✅
+- [x] All `agent/`, `policy/`, `scripts/`, `tools/` skeleton modules created ✅
 
 ---
 
