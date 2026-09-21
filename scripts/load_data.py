@@ -1,5 +1,5 @@
 """
-FraudLens — Data Loading Script
+FraudLens     Data Loading Script
 =================================
 Loads CSV data files into TigerGraph using the installed loading jobs.
 
@@ -64,7 +64,7 @@ def validate_csvs() -> bool:
                     f"expected ~{expected:,}"
                 )
             else:
-                logger.success(f"OK: {filename} — {row_count:,} rows | Columns: {list(df.columns[:5])}...")
+                logger.success(f"OK: {filename}     {row_count:,} rows | Columns: {list(df.columns[:5])}...")
 
         except Exception as e:
             logger.error(f"ERROR reading {filename}: {e}")

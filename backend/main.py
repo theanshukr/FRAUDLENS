@@ -1,5 +1,5 @@
 """
-FraudLens — FastAPI Backend
+FraudLens     FastAPI Backend
 ============================
 Main application entry point.
 
@@ -350,13 +350,13 @@ async def get_policies():
             {"rule_id": "R1", "description": "Immediate block if fraud_probability >= 0.85 with 2+ evidence", "actions": ["BLOCK_CARD", "BLOCK_TRANSACTION"]},
             {"rule_id": "R2", "description": "Customer denial requires immediate block", "actions": ["BLOCK_CARD"]},
             {"rule_id": "R3", "description": "Monitor if fraud_probability >= 0.30", "actions": ["MONITOR_ACCOUNT"]},
-            {"rule_id": "R4", "description": "Fraud ring: 2+ connected fraud cases → SAR", "actions": ["FLAG_FRAUD_RING", "ESCALATE_CASE"]},
+            {"rule_id": "R4", "description": "Fraud ring: 2+ connected fraud cases     SAR", "actions": ["FLAG_FRAUD_RING", "ESCALATE_CASE"]},
             {"rule_id": "R5", "description": "Card testing pattern: block immediately", "actions": ["BLOCK_CARD"]},
             {"rule_id": "R6", "description": "High exposure (>=$10K): mandatory SAR", "actions": ["FILE_REPORT"]},
             {"rule_id": "R7", "description": "3+ cards share device: organized fraud ring", "actions": ["FLAG_FRAUD_RING"]},
-            {"rule_id": "R8", "description": "Velocity: >10 transactions in 24h → block", "actions": ["BLOCK_CARD"]},
+            {"rule_id": "R8", "description": "Velocity: >10 transactions in 24h     block", "actions": ["BLOCK_CARD"]},
             {"rule_id": "R9", "description": "New device + out-of-region: step-up auth", "actions": ["REQUEST_STEP_UP_AUTH"]},
-            {"rule_id": "R10", "description": "No customer response + high probability → precautionary block", "actions": ["BLOCK_CARD"]},
+            {"rule_id": "R10", "description": "No customer response + high probability     precautionary block", "actions": ["BLOCK_CARD"]},
         ],
         "actions": [
             {"action": "ALLOW_TRANSACTION", "route": "auto"},

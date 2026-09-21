@@ -1,5 +1,5 @@
 """
-FraudLens — Memory Retrieval
+FraudLens     Memory Retrieval
 ==============================
 Retrieves similar historical fraud cases from TigerGraph to inform
 the current investigation.

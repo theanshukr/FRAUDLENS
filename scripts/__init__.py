@@ -1,1 +1,1 @@
-"""FraudLens — Scripts Package"""
+"""FraudLens - Scripts Package"""

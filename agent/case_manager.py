@@ -1,11 +1,11 @@
 """
-FraudLens — Case Manager
+FraudLens     Case Manager
 ==========================
 Manages the lifecycle of a FraudCase through the investigation state machine.
 
 Case State Machine:
-  TRIGGERED → INVESTIGATING → AWAITING_EVIDENCE → REASSESSING
-  → ACTION_RECOMMENDED → AWAITING_APPROVAL → ACTION_TAKEN → RESOLVED
+  TRIGGERED     INVESTIGATING     AWAITING_EVIDENCE     REASSESSING
+      ACTION_RECOMMENDED     AWAITING_APPROVAL     ACTION_TAKEN     RESOLVED
 
 The case manager:
   - Creates and tracks the case record
@@ -58,7 +58,7 @@ class TimelineEvent(BaseModel):
 # ============================================================
 
 class FraudCaseRecord(BaseModel):
-    """Complete fraud case record — matches hackathon answer format."""
+    """Complete fraud case record     matches hackathon answer format."""
 
     # Identity
     case_id: str
@@ -169,10 +169,10 @@ class CaseManager:
         case.updated_at = datetime.utcnow()
         self._add_timeline_event(
             case,
-            f"STATUS_CHANGE:{old_status.value}→{new_status.value}",
+            f"STATUS_CHANGE:{old_status.value}   {new_status.value}",
             description or f"Status changed to {new_status.value}",
         )
-        logger.info(f"Case {case.case_id}: {old_status.value} → {new_status.value}")
+        logger.info(f"Case {case.case_id}: {old_status.value}     {new_status.value}")
 
     def append_evidence(self, case: FraudCaseRecord, evidence_items: list) -> None:
         """Append new evidence items to the case record."""
@@ -251,7 +251,7 @@ class CaseManager:
     async def write_to_graph(self, case: FraudCaseRecord) -> bool:
         """Write case to TigerGraph via write_case query."""
         if self.tg_client is None:
-            logger.warning("No TigerGraph client — skipping graph write (dev mode)")
+            logger.warning("No TigerGraph client     skipping graph write (dev mode)")
             return False
         try:
             # TODO (Phase 1): Use MCP tool call

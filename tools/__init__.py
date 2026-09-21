@@ -1,1 +1,1 @@
-"""FraudLens — TigerGraph MCP Tools Package"""
+"""FraudLens - TigerGraph MCP Tools Package"""

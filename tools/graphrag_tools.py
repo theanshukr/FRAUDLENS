@@ -1,5 +1,5 @@
 """
-FraudLens — GraphRAG Tools
+FraudLens - GraphRAG Tools
 ===========================
 TigerGraph vector store tools for semantic similarity search.
 Uses analyst_notes embeddings to find similar historical fraud cases.

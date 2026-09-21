@@ -1,5 +1,5 @@
 """
-FraudLens — Investigation Planner
+FraudLens     Investigation Planner
 ==================================
 Builds a structured investigation plan based on the trigger type,
 transaction ID, card ID, and customer ID.
@@ -11,9 +11,9 @@ The planner determines:
 - Why each step is needed
 
 Different trigger types result in different investigation plans:
-  - risk_score      → Focus on transaction patterns + device sharing
-  - customer_report → Focus on account takeover signals
-  - analyst_request → Comprehensive investigation across all dimensions
+  - risk_score          Focus on transaction patterns + device sharing
+  - customer_report     Focus on account takeover signals
+  - analyst_request     Comprehensive investigation across all dimensions
 """
 
 from __future__ import annotations
@@ -33,9 +33,9 @@ class TriggerType(str, Enum):
 
 
 class QueryPriority(str, Enum):
-    P0 = "P0"   # Must run — critical path
-    P1 = "P1"   # Should run — important signal
-    P2 = "P2"   # Nice to have — supplementary
+    P0 = "P0"   # Must run     critical path
+    P1 = "P1"   # Should run     important signal
+    P2 = "P2"   # Nice to have     supplementary
 
 
 @dataclass
@@ -143,7 +143,7 @@ def build_investigation_plan(
             reason="High risk score often co-occurs with card testing behavior",
             depends_on=["step_02"],
         ))
-        plan.hypothesis = "Transaction flagged by risk model — check card testing and device sharing"
+        plan.hypothesis = "Transaction flagged by risk model     check card testing and device sharing"
 
     elif trigger_type == TriggerType.CUSTOMER_REPORT:
         plan.steps.append(InvestigationStep(
@@ -152,10 +152,10 @@ def build_investigation_plan(
             description="Check for transactions from new/unknown devices",
             priority=QueryPriority.P0,
             params={"card_id": card_id},
-            reason="Customer report of unauthorized use → check device mismatch",
+            reason="Customer report of unauthorized use     check device mismatch",
             depends_on=["step_01"],
         ))
-        plan.hypothesis = "Customer reported unauthorized activity — check account takeover signals"
+        plan.hypothesis = "Customer reported unauthorized activity     check account takeover signals"
 
     elif trigger_type == TriggerType.ANALYST_REQUEST:
         plan.steps.append(InvestigationStep(
@@ -164,10 +164,10 @@ def build_investigation_plan(
             description="Check for unusual transaction velocity",
             priority=QueryPriority.P1,
             params={"card_id": card_id, "hours": 72},
-            reason="Analyst-requested review — comprehensive pattern check",
+            reason="Analyst-requested review     comprehensive pattern check",
             depends_on=["step_02"],
         ))
-        plan.hypothesis = "Analyst flagged for review — comprehensive investigation across all patterns"
+        plan.hypothesis = "Analyst flagged for review     comprehensive investigation across all patterns"
 
     # --- Step 6: Similar cases from memory (always) ---
     plan.steps.append(InvestigationStep(
@@ -199,4 +199,4 @@ if __name__ == "__main__":
         customer_id="C_001",
     )
     for step in plan.steps:
-        print(f"  [{step.priority}] {step.step_id}: {step.query_name} — {step.description}")
+        print(f"  [{step.priority}] {step.step_id}: {step.query_name}     {step.description}")

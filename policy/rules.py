@@ -1,13 +1,13 @@
 """
-FraudLens — Policy Rules Engine
+FraudLens     Policy Rules Engine
 =================================
 All fraud policy rules are encoded as deterministic Python functions.
 
 CRITICAL PRINCIPLE: The agent CANNOT override policy via LLM reasoning.
-Policy rules are hard constraints — if a rule fires, its action is mandatory.
+Policy rules are hard constraints     if a rule fires, its action is mandatory.
 
-Rules R1–R10 correspond to the FraudLens policy document.
-Actions A1–A14 correspond to the 14 policy actions.
+Rules R1   R10 correspond to the FraudLens policy document.
+Actions A1   A14 correspond to the 14 policy actions.
 """
 
 from __future__ import annotations
@@ -17,12 +17,12 @@ from typing import Literal
 ApprovalRoute = Literal["auto", "L1", "L2"]
 
 # ============================================================
-# Policy Rules (R1–R10)
+# Policy Rules (R1   R10)
 # ============================================================
 
 def check_rule_R1(fraud_probability: float, evidence_count: int) -> bool:
     """
-    R1 — Immediate Block Rule
+    R1     Immediate Block Rule
     If fraud_probability >= 0.85 AND at least 2 independent evidence items,
     BLOCK_CARD is mandatory without L2 approval delay.
     """
@@ -31,7 +31,7 @@ def check_rule_R1(fraud_probability: float, evidence_count: int) -> bool:
 
 def check_rule_R2(customer_response: str) -> bool:
     """
-    R2 — Customer Denial Rule
+    R2     Customer Denial Rule
     If customer explicitly denies a transaction, immediate block required.
     customer_response: "denied" | "confirmed" | "no_response"
     """
@@ -40,7 +40,7 @@ def check_rule_R2(customer_response: str) -> bool:
 
 def check_rule_R3(fraud_probability: float) -> bool:
     """
-    R3 — Monitoring Threshold
+    R3     Monitoring Threshold
     If fraud_probability >= 0.30, add account to enhanced monitoring.
     """
     return fraud_probability >= 0.30
@@ -48,7 +48,7 @@ def check_rule_R3(fraud_probability: float) -> bool:
 
 def check_rule_R4(connected_fraud_cases: int) -> bool:
     """
-    R4 — Fraud Ring Rule
+    R4     Fraud Ring Rule
     If 2+ connected accounts previously involved in fraud cases,
     escalate to L2 and flag for SAR filing.
     """
@@ -57,7 +57,7 @@ def check_rule_R4(connected_fraud_cases: int) -> bool:
 
 def check_rule_R5(txn_sequence: list[dict]) -> bool:
     """
-    R5 — Card Testing Rule
+    R5     Card Testing Rule
     If sequence has 3+ micro-transactions (< $5) followed by large transaction,
     immediately block card.
     txn_sequence: list of {"amount": float, "ts": datetime}
@@ -69,7 +69,7 @@ def check_rule_R5(txn_sequence: list[dict]) -> bool:
 
 def check_rule_R6(exposure_usd: float) -> bool:
     """
-    R6 — High Exposure Rule
+    R6     High Exposure Rule
     If fraud exposure >= $10,000, mandatory SAR filing and L2 approval.
     """
     return exposure_usd >= 10_000.0
@@ -77,7 +77,7 @@ def check_rule_R6(exposure_usd: float) -> bool:
 
 def check_rule_R7(shared_device_count: int) -> bool:
     """
-    R7 — Device Ring Rule
+    R7     Device Ring Rule
     If 3+ cards share the same device profile, flag as organized fraud ring.
     Requires L2 approval and analyst review.
     """
@@ -86,7 +86,7 @@ def check_rule_R7(shared_device_count: int) -> bool:
 
 def check_rule_R8(velocity_count: int, hours: int) -> bool:
     """
-    R8 — Velocity Rule
+    R8     Velocity Rule
     If more than 10 transactions in 24 hours, block card immediately.
     """
     return velocity_count > 10 and hours <= 24
@@ -94,7 +94,7 @@ def check_rule_R8(velocity_count: int, hours: int) -> bool:
 
 def check_rule_R9(is_new_device: bool, out_of_region: bool) -> bool:
     """
-    R9 — Account Takeover Indicator
+    R9     Account Takeover Indicator
     If transaction from new device AND out-of-home-region, require step-up auth.
     """
     return is_new_device and out_of_region
@@ -102,7 +102,7 @@ def check_rule_R9(is_new_device: bool, out_of_region: bool) -> bool:
 
 def check_rule_R10(customer_response: str, fraud_probability: float) -> bool:
     """
-    R10 — Inconclusive Rule
+    R10     Inconclusive Rule
     If customer does not respond AND fraud_probability > 0.50,
     treat as confirmed fraud for precautionary blocking.
     """
@@ -113,7 +113,7 @@ def check_rule_R10(customer_response: str, fraud_probability: float) -> bool:
 # Approval Routes
 # ============================================================
 
-# Action → (min_approval_route, exposure_threshold_for_upgrade)
+# Action     (min_approval_route, exposure_threshold_for_upgrade)
 _ACTION_ROUTES: dict[str, tuple[ApprovalRoute, float]] = {
     "ALLOW_TRANSACTION":      ("auto", float("inf")),
     "MONITOR_ACCOUNT":        ("auto", float("inf")),
@@ -187,7 +187,7 @@ def requires_SAR(
 
 def requires_case(fraud_probability: float) -> bool:
     """
-    R_CASE — Case Creation Rule
+    R_CASE     Case Creation Rule
     A fraud case must be created if fraud_probability >= 0.30.
     """
     return fraud_probability >= 0.30

@@ -1,5 +1,5 @@
 """
-FraudLens — Benchmark Runner
+FraudLens     Benchmark Runner
 ==============================
 Runs all 20 benchmark cases from case_pack.csv through the agent pipeline
 and writes answer JSON files to cases/ directory.
@@ -10,8 +10,8 @@ Usage:
     python scripts/run_benchmarks.py --limit 5          # Run first 5 cases
 
 Output:
-    cases/<case_id>.json — One file per benchmark case
-    cases/_benchmark_summary.json — Aggregate metrics
+    cases/<case_id>.json     One file per benchmark case
+    cases/_benchmark_summary.json     Aggregate metrics
 
 Metrics tracked per case:
     - tool_calls count
@@ -173,7 +173,7 @@ async def run_benchmarks(case_filter: str = None, limit: int = None) -> None:
         v = validate_case_json(result["case_id"])
         validations.append(v)
         if not v["valid"]:
-            logger.warning(f"  {result['case_id']}: INVALID — {v['issues']}")
+            logger.warning(f"  {result['case_id']}: INVALID     {v['issues']}")
         else:
             logger.success(f"  {result['case_id']}: VALID")
 

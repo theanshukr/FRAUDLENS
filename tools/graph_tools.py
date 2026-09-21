@@ -1,5 +1,5 @@
 """
-FraudLens — TigerGraph Graph Tools
+FraudLens     TigerGraph Graph Tools
 =====================================
 MCP tool wrappers for all TigerGraph GSQL queries.
 
@@ -23,18 +23,23 @@ load_dotenv()
 # TigerGraph Connection
 # ============================================================
 
-def get_tg_connection() -> tg.TigerGraphConnection:
+def get_tg_connection() -> Optional[tg.TigerGraphConnection]:
     """Create and return an authenticated TigerGraph connection."""
-    conn = tg.TigerGraphConnection(
-        host=os.getenv("TG_HOST", "http://localhost"),
-        graphname=os.getenv("TG_GRAPH_NAME", "FraudLens"),
-        username=os.getenv("TG_USERNAME", "tigergraph"),
-        password=os.getenv("TG_PASSWORD", "tigergraph"),
-    )
-    # Get auth token
-    conn.getToken(os.getenv("TG_SECRET", ""))
-    logger.info(f"Connected to TigerGraph: {conn.host}/{conn.graphname}")
-    return conn
+    try:
+        conn = tg.TigerGraphConnection(
+            host=os.getenv("TG_HOST", "http://localhost"),
+            graphname=os.getenv("TG_GRAPH_NAME", "FraudLens"),
+            username=os.getenv("TG_USERNAME", "tigergraph"),
+            password=os.getenv("TG_PASSWORD", "tigergraph"),
+        )
+        secret = os.getenv("TG_SECRET", "")
+        if secret and secret != "your_secret_here":
+            conn.getToken(secret)
+        logger.info(f"Connected to TigerGraph: {conn.host}/{conn.graphname}")
+        return conn
+    except Exception as e:
+        logger.warning(f"TigerGraph connection failed (this is expected if no DB is configured): {e}")
+        return None
 
 
 # ============================================================
@@ -45,7 +50,7 @@ def get_transaction(conn: tg.TigerGraphConnection, txn_id: str) -> dict:
     """Fetch full transaction + linked identity record."""
     try:
         result = conn.runInstalledQuery("get_transaction", params={"txn_id": txn_id})
-        logger.debug(f"get_transaction({txn_id}) → {len(result)} results")
+        logger.debug(f"get_transaction({txn_id})     {len(result)} results")
         return {"success": True, "results": result, "entity_ids": [txn_id]}
     except Exception as e:
         logger.error(f"get_transaction failed: {e}")

@@ -1,5 +1,5 @@
 """
-FraudLens — Policy Engine
+FraudLens     Policy Engine
 ==========================
 Wraps the policy rules module with higher-level API for the agent.
 
@@ -67,7 +67,7 @@ class PolicyEngine:
         """
         Evaluate all policy rules and return a complete PolicyDecision.
 
-        All inputs must come from structured evidence — NOT from LLM reasoning.
+        All inputs must come from structured evidence     NOT from LLM reasoning.
         """
         if txn_sequence is None:
             txn_sequence = []
@@ -75,7 +75,7 @@ class PolicyEngine:
         decision = PolicyDecision()
         mandatory: set[str] = set()
 
-        # R1 — Immediate block
+        # R1     Immediate block
         if check_rule_R1(fraud_probability, evidence_count):
             decision.triggered_rules.append(PolicyViolation(
                 rule_id="R1",
@@ -84,7 +84,7 @@ class PolicyEngine:
             ))
             mandatory.update(["BLOCK_CARD", "BLOCK_TRANSACTION"])
 
-        # R2 — Customer denial
+        # R2     Customer denial
         if check_rule_R2(customer_response):
             decision.triggered_rules.append(PolicyViolation(
                 rule_id="R2",
@@ -93,7 +93,7 @@ class PolicyEngine:
             ))
             mandatory.update(["BLOCK_CARD", "WARN_CUSTOMER"])
 
-        # R3 — Monitoring
+        # R3     Monitoring
         if check_rule_R3(fraud_probability):
             decision.triggered_rules.append(PolicyViolation(
                 rule_id="R3",
@@ -102,7 +102,7 @@ class PolicyEngine:
             ))
             mandatory.update(["MONITOR_ACCOUNT", "CREATE_CASE"])
 
-        # R4 — Fraud ring
+        # R4     Fraud ring
         if check_rule_R4(connected_fraud_cases):
             decision.triggered_rules.append(PolicyViolation(
                 rule_id="R4",
@@ -111,7 +111,7 @@ class PolicyEngine:
             ))
             mandatory.update(["FLAG_FRAUD_RING", "ESCALATE_CASE"])
 
-        # R5 — Card testing
+        # R5     Card testing
         if check_rule_R5(txn_sequence):
             decision.triggered_rules.append(PolicyViolation(
                 rule_id="R5",
@@ -120,7 +120,7 @@ class PolicyEngine:
             ))
             mandatory.update(["BLOCK_CARD", "BLOCK_TRANSACTION"])
 
-        # R6 — High exposure
+        # R6     High exposure
         if check_rule_R6(exposure_usd):
             decision.triggered_rules.append(PolicyViolation(
                 rule_id="R6",
@@ -129,7 +129,7 @@ class PolicyEngine:
             ))
             mandatory.update(["FILE_REPORT", "ESCALATE_CASE"])
 
-        # R7 — Device ring
+        # R7     Device ring
         if check_rule_R7(shared_device_count):
             decision.triggered_rules.append(PolicyViolation(
                 rule_id="R7",
@@ -138,7 +138,7 @@ class PolicyEngine:
             ))
             mandatory.update(["FLAG_FRAUD_RING", "ESCALATE_CASE"])
 
-        # R8 — Velocity
+        # R8     Velocity
         if check_rule_R8(velocity_count, 24):
             decision.triggered_rules.append(PolicyViolation(
                 rule_id="R8",
@@ -147,7 +147,7 @@ class PolicyEngine:
             ))
             mandatory.add("BLOCK_CARD")
 
-        # R9 — Account takeover indicator
+        # R9     Account takeover indicator
         if check_rule_R9(is_new_device, out_of_region):
             decision.triggered_rules.append(PolicyViolation(
                 rule_id="R9",
@@ -156,7 +156,7 @@ class PolicyEngine:
             ))
             mandatory.add("REQUEST_STEP_UP_AUTH")
 
-        # R10 — Inconclusive with high probability
+        # R10     Inconclusive with high probability
         if check_rule_R10(customer_response, fraud_probability):
             decision.triggered_rules.append(PolicyViolation(
                 rule_id="R10",
