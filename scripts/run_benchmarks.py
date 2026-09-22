@@ -27,8 +27,13 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import sys
 import time
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -38,7 +43,11 @@ load_dotenv()
 
 CASES_DIR  = Path("./cases")
 DATA_DIR   = Path("./data")
-CASE_PACK  = DATA_DIR / "case_pack.csv"
+SAMPLE_DIR = Path("./dataset_sample")
+
+# Search for case_pack.csv in data/ first, then dataset_sample/
+_CASE_PACK_CANDIDATES = [DATA_DIR / "case_pack.csv", SAMPLE_DIR / "case_pack.csv"]
+CASE_PACK = next((p for p in _CASE_PACK_CANDIDATES if p.exists()), _CASE_PACK_CANDIDATES[0])
 
 
 async def run_case(case_row: dict) -> dict:
@@ -46,11 +55,36 @@ async def run_case(case_row: dict) -> dict:
     from agent.orchestrator import Orchestrator
 
     orch = Orchestrator(cases_dir=str(CASES_DIR))
-    case_id    = case_row.get("case_id", "")
-    txn_id     = case_row.get("TransactionID", case_row.get("txn_id", ""))
-    card_id    = case_row.get("card_id", None)
-    trigger    = case_row.get("trigger_type", "risk_score")
-    risk_score = float(case_row.get("risk_score", 0.5))
+
+    # Handle multiple possible column name conventions in case_pack.csv
+    case_id    = (
+        case_row.get("case_id") or
+        case_row.get("HHG_case_id") or
+        case_row.get("Case_ID") or
+        ""
+    )
+    txn_id     = (
+        case_row.get("txn_id") or
+        case_row.get("TransactionID") or
+        case_row.get("transaction_id") or
+        ""
+    )
+    card_id    = (
+        case_row.get("card_id") or
+        case_row.get("Card_ID") or
+        None
+    )
+    trigger    = (
+        case_row.get("trigger_type") or
+        case_row.get("Trigger") or
+        "risk_score"
+    )
+    risk_score_raw = (
+        case_row.get("risk_score") or
+        case_row.get("initial_risk_score") or
+        0.5
+    )
+    risk_score = float(risk_score_raw)
 
     logger.info(f"Running benchmark case: {case_id} | txn={txn_id}")
     start = time.perf_counter()
@@ -143,8 +177,8 @@ async def run_benchmarks(case_filter: str = None, limit: int = None) -> None:
     CASES_DIR.mkdir(parents=True, exist_ok=True)
 
     if not CASE_PACK.exists():
-        logger.error(f"case_pack.csv not found at {CASE_PACK}")
-        logger.info("Copy data files to ./data/ first: python scripts/load_data.py --dry-run")
+        logger.error(f"case_pack.csv not found. Searched: {_CASE_PACK_CANDIDATES}")
+        logger.info("Copy case_pack.csv to ./data/ or ./dataset_sample/ first")
         return
 
     df = pd.read_csv(CASE_PACK)

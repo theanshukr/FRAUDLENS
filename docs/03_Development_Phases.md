@@ -1,6 +1,6 @@
 # FraudLens — Development Phases
 
-> **Version:** 1.1 *(Updated: 2026-09-21 — Phase 0 progress review)*  
+> **Version:** 1.3 *(Updated: 2026-09-22 — Phase 3 complete)*  
 > **Project:** FraudLens — AI Agentic Fraud Investigation Platform  
 > **Hackathon:** TigerGraph × Hacker House Goa 2026  
 > **Total Estimated Duration:** 8–10 days (hackathon sprint)
@@ -11,14 +11,14 @@
 
 | Phase | Status | Notes |
 |---|---|---|
-| **Phase 0** — Environment & Data Setup | 🟡 In Progress | Core structure done; TigerGraph connection pending |
-| **Phase 1** — Graph Construction | ⬜ Not Started | Schema + loading jobs drafted; needs live DB |
-| **Phase 2** — Agent Orchestration | ⬜ Not Started | Skeleton files exist; core logic not yet complete |
-| **Phase 3** — Backend API | ⬜ Not Started | FastAPI `main.py` scaffolded |
-| **Phase 4** — Frontend UI | ⬜ Not Started | — |
-| **Phase 5** — Integration & Demo | ⬜ Not Started | — |
+| **Phase 0** — Environment & Data Setup | 🟢 Complete | Cloud TG workspace live, secrets & .env verified |
+| **Phase 1** — Graph Construction | 🟢 Complete | Schema installed, 16 GSQL queries compiled, data loaded |
+| **Phase 2** — Agent Orchestration | 🟢 Complete | Full investigation loop, 21/21 tests passing, benchmark runner ready |
+| **Phase 3** — Backend API | 🟢 Complete | FastAPI with SSE, graph builder, approval state machine, 29/29 tests |
+| **Phase 4** — Frontend UI | ⬜ Not Started | Dashboard & investigation workbench |
+| **Phase 5** — Integration & Demo | ⬜ Not Started | End-to-end benchmarks & demo |
 
-> **Last reviewed from branch:** `kanav-backend-updates` (commit `b47af67`, Kanav-prog)
+> **Last reviewed from branch:** `master` (commit 2026-09-22, Phase 3 complete)
 
 ---
 
@@ -479,13 +479,14 @@ END
 
 ### Phase 2 Acceptance Criteria
 
-- [ ] Agent can investigate a single benchmark case end-to-end
-- [ ] Risk assessment produces valid `fraud_probability` and pattern classification
-- [ ] Re-investigation loop triggers when `sufficient_to_act = False`
-- [ ] `initial` and `final` NBA differ correctly after simulated evidence
-- [ ] Policy engine enforces approval routes correctly
-- [ ] Case JSON written to TigerGraph
-- [ ] Valid answer JSON produced for at least 5 test cases
+- [x] Agent can investigate a single benchmark case end-to-end ✅
+- [x] Risk assessment produces valid `fraud_probability` and pattern classification ✅
+- [x] Re-investigation loop triggers when `sufficient_to_act = False` ✅
+- [x] `initial` and `final` NBA differ correctly after simulated evidence ✅
+- [x] Policy engine enforces approval routes correctly ✅ (7/7 policy tests pass)
+- [x] Case JSON written to TigerGraph ✅ (via `graph_tools.write_case`)
+- [x] Valid answer JSON produced for all benchmark cases ✅ (schema validator passes)
+- [x] 21/21 agent tests pass ✅
 
 ---
 
@@ -566,11 +567,12 @@ GET    /api/benchmarks/run                       Run all 20 benchmark cases
 
 ### Phase 3 Acceptance Criteria
 
-- [ ] `POST /api/investigations` creates a case and starts the agent
-- [ ] SSE stream delivers real-time agent steps to a test client
-- [ ] Graph data endpoint returns valid nodes/edges JSON
-- [ ] Approval endpoint updates case status correctly
-- [ ] All responses match defined Pydantic models
+- [x] `POST /api/investigations` creates a case and starts the agent ✅
+- [x] SSE stream delivers real-time agent steps to a test client ✅
+- [x] Graph data endpoint returns valid nodes/edges JSON built from evidence ✅
+- [x] Approval endpoint updates case status and persists to disk ✅
+- [x] All responses match defined Pydantic models ✅
+- [x] 29/29 backend tests pass ✅
 
 ---
 

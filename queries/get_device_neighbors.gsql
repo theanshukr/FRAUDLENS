@@ -1,31 +1,28 @@
 -- ============================================================
 -- FraudLens Query: get_device_neighbors
--- Returns all cards and transactions that used this device profile
+-- Returns all cards and transactions connected to a device profile
 -- ============================================================
 
 USE GRAPH FraudLens
 
-CREATE OR REPLACE QUERY get_device_neighbors(STRING device_profile_id) FOR GRAPH FraudLens
-SYNTAX V2 {
-    /*
-     * Returns: All transactions and cards linked to a device profile
-     * Key query for identifying shared-device fraud rings
-     */
-
-    SetAccum<VERTEX<Card>>        @@cards;
-    SetAccum<VERTEX<Transaction>> @@transactions;
-
-    device_v = {DeviceProfile.*};
-
-    -- Transactions that used this device
-    txns = SELECT t FROM device_v:d - (FROM_DEVICE:e) - Transaction:t
-           WHERE d.profile_id == device_profile_id
-           ACCUM @@transactions += t;
-
-    -- Cards that made those transactions
-    cards = SELECT c FROM txns:t - (MADE:e) - Card:c
-            ACCUM @@cards += c;
-
-    PRINT @@cards, @@transactions;
+CREATE OR REPLACE QUERY get_device_neighbors(STRING profile_id) FOR GRAPH FraudLens SYNTAX V1 {
+    OrAccum @is_target_txn;
+    SetAccum<VERTEX> @@results;
+    
+    devs = { DeviceProfile.* };
+    target_dev = SELECT d FROM devs:d WHERE d.profile_id == profile_id
+                 ACCUM @@results += d;
+    
+    txns_all = { Transaction.* };
+    txns = SELECT t FROM txns_all:t -(FROM_DEVICE:e)-> DeviceProfile:d
+           WHERE d.profile_id == profile_id
+           ACCUM t.@is_target_txn = true, @@results += t;
+    
+    cards_all = { Card.* };
+    cards = SELECT c FROM cards_all:c -(MADE:e)-> Transaction:t
+            WHERE t.@is_target_txn == true
+            ACCUM @@results += c;
+    
+    PRINT @@results;
 }
 INSTALL QUERY get_device_neighbors

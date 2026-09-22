@@ -1,0 +1,564 @@
+{
+  "case_id": "HHG-003",
+  "txn_id": "",
+  "card_id": "C08623-K2",
+  "customer_id": null,
+  "trigger_type": "customer_report",
+  "trigger_risk_score": NaN,
+  "status": "RESOLVED",
+  "created_at": "2026-09-22T13:52:59.506088",
+  "updated_at": "2026-09-22T13:53:05.349891",
+  "initial_risk_level": "HIGH",
+  "initial_fraud_probability": 0.697,
+  "initial_confidence": 0.845,
+  "final_risk_level": "HIGH",
+  "final_fraud_probability": 0.702,
+  "final_confidence": 0.88,
+  "pattern": "account_takeover",
+  "pattern_description": "Attacker gains access to legitimate account and makes unauthorized transactions",
+  "evidence": [
+    {
+      "evidence_id": "EVD-0001",
+      "claim": "Transaction retrieved \u2014 amount $0.00 via . Risk score unavailable.",
+      "source": "graph",
+      "ref": "get_transaction",
+      "entity_ids": [
+        ""
+      ],
+      "confidence": 0.4,
+      "timestamp": "2026-09-22T13:52:59.749490",
+      "raw_data": {
+        "@@results": []
+      },
+      "supports_fraud": null
+    },
+    {
+      "evidence_id": "EVD-0002",
+      "claim": "Card history retrieved: 1 transactions. No anomalous pattern detected.",
+      "source": "graph",
+      "ref": "get_card_history",
+      "entity_ids": [
+        "C08623-K2"
+      ],
+      "confidence": 0.55,
+      "timestamp": "2026-09-22T13:53:00.615060",
+      "raw_data": {
+        "transaction_count": 1,
+        "micro_txn_count": 1
+      },
+      "supports_fraud": null
+    },
+    {
+      "evidence_id": "EVD-0003",
+      "claim": "No device neighbors found \u2014 device profile is unique to this transaction.",
+      "source": "graph",
+      "ref": "get_device_neighbors",
+      "entity_ids": [],
+      "confidence": 0.55,
+      "timestamp": "2026-09-22T13:53:00.946778",
+      "raw_data": {
+        "shared_device_count": 0
+      },
+      "supports_fraud": false
+    },
+    {
+      "evidence_id": "EVD-0004",
+      "claim": "No connected cards found via device graph \u2014 this card appears isolated.",
+      "source": "graph",
+      "ref": "find_connected_cards",
+      "entity_ids": [
+        "C08623-K2"
+      ],
+      "confidence": 0.6,
+      "timestamp": "2026-09-22T13:53:01.249122",
+      "raw_data": {
+        "ring_size": 1,
+        "connected_card_ids": []
+      },
+      "supports_fraud": false
+    },
+    {
+      "evidence_id": "EVD-0005",
+      "claim": "Transaction originated from a new/unrecognized device \u2014 no prior transaction history from this device profile. Account takeover signal.",
+      "source": "graph",
+      "ref": "detect_new_device_usage",
+      "entity_ids": [
+        "C08623-K2"
+      ],
+      "confidence": 0.78,
+      "timestamp": "2026-09-22T13:53:01.559292",
+      "raw_data": {
+        "is_new_device": true
+      },
+      "supports_fraud": true
+    },
+    {
+      "evidence_id": "EVD-0006",
+      "claim": "Historical memory: 1 similar cases found \u2014 mixed outcomes.",
+      "source": "document",
+      "ref": "search_similar_cases",
+      "entity_ids": [],
+      "confidence": 0.6,
+      "timestamp": "2026-09-22T13:53:02.377631",
+      "raw_data": {
+        "result_count": 1,
+        "fraud_case_count": 0
+      },
+      "supports_fraud": null
+    },
+    {
+      "evidence_id": "EVD-SIM-REQ-001",
+      "claim": "Customer explicitly denied making this transaction. States card was in their possession.",
+      "source": "customer",
+      "ref": "evidence_request:REQ-001",
+      "entity_ids": [],
+      "confidence": 0.9,
+      "timestamp": "2026-09-22T13:53:02.686485",
+      "raw_data": {
+        "request_id": "REQ-001",
+        "scenario": "deny"
+      },
+      "supports_fraud": true
+    },
+    {
+      "evidence_id": "EVD-0007",
+      "claim": "Transaction retrieved \u2014 amount $0.00 via . Risk score unavailable.",
+      "source": "graph",
+      "ref": "get_transaction",
+      "entity_ids": [
+        ""
+      ],
+      "confidence": 0.4,
+      "timestamp": "2026-09-22T13:53:03.498151",
+      "raw_data": {
+        "@@results": []
+      },
+      "supports_fraud": null
+    },
+    {
+      "evidence_id": "EVD-0008",
+      "claim": "Card history retrieved: 1 transactions. No anomalous pattern detected.",
+      "source": "graph",
+      "ref": "get_card_history",
+      "entity_ids": [
+        "C08623-K2"
+      ],
+      "confidence": 0.55,
+      "timestamp": "2026-09-22T13:53:03.809955",
+      "raw_data": {
+        "transaction_count": 1,
+        "micro_txn_count": 1
+      },
+      "supports_fraud": null
+    },
+    {
+      "evidence_id": "EVD-0009",
+      "claim": "No device neighbors found \u2014 device profile is unique to this transaction.",
+      "source": "graph",
+      "ref": "get_device_neighbors",
+      "entity_ids": [],
+      "confidence": 0.55,
+      "timestamp": "2026-09-22T13:53:04.118498",
+      "raw_data": {
+        "shared_device_count": 0
+      },
+      "supports_fraud": false
+    },
+    {
+      "evidence_id": "EVD-0010",
+      "claim": "No connected cards found via device graph \u2014 this card appears isolated.",
+      "source": "graph",
+      "ref": "find_connected_cards",
+      "entity_ids": [
+        "C08623-K2"
+      ],
+      "confidence": 0.6,
+      "timestamp": "2026-09-22T13:53:04.425467",
+      "raw_data": {
+        "ring_size": 1,
+        "connected_card_ids": []
+      },
+      "supports_fraud": false
+    },
+    {
+      "evidence_id": "EVD-0011",
+      "claim": "Transaction originated from a new/unrecognized device \u2014 no prior transaction history from this device profile. Account takeover signal.",
+      "source": "graph",
+      "ref": "detect_new_device_usage",
+      "entity_ids": [
+        "C08623-K2"
+      ],
+      "confidence": 0.78,
+      "timestamp": "2026-09-22T13:53:04.732794",
+      "raw_data": {
+        "is_new_device": true
+      },
+      "supports_fraud": true
+    },
+    {
+      "evidence_id": "EVD-0012",
+      "claim": "Historical memory: 1 similar cases found \u2014 mixed outcomes.",
+      "source": "document",
+      "ref": "search_similar_cases",
+      "entity_ids": [],
+      "confidence": 0.6,
+      "timestamp": "2026-09-22T13:53:05.003234",
+      "raw_data": {
+        "result_count": 1,
+        "fraud_case_count": 0
+      },
+      "supports_fraud": null
+    }
+  ],
+  "evidence_request": null,
+  "evidence_request_response": null,
+  "initial_actions": [
+    {
+      "action": "MONITOR_ACCOUNT",
+      "route": "auto",
+      "reason": "Fraud probability above monitoring threshold (0.30)",
+      "policy_rule": "R3",
+      "priority": 1,
+      "is_mandatory": true,
+      "status": "pending"
+    },
+    {
+      "action": "CREATE_CASE",
+      "route": "auto",
+      "reason": "Fraud probability above monitoring threshold (0.30)",
+      "policy_rule": "R3",
+      "priority": 2,
+      "is_mandatory": true,
+      "status": "pending"
+    },
+    {
+      "action": "BLOCK_CARD",
+      "route": "L1",
+      "reason": "No customer response with high fraud probability",
+      "policy_rule": "R10",
+      "priority": 3,
+      "is_mandatory": true,
+      "status": "pending"
+    },
+    {
+      "action": "WARN_CUSTOMER",
+      "route": "auto",
+      "reason": "No customer response with high fraud probability",
+      "policy_rule": "R10",
+      "priority": 4,
+      "is_mandatory": true,
+      "status": "pending"
+    }
+  ],
+  "final_actions": [
+    {
+      "action": "MONITOR_ACCOUNT",
+      "route": "auto",
+      "reason": "Fraud probability above monitoring threshold (0.30)",
+      "policy_rule": "R3",
+      "priority": 1,
+      "is_mandatory": true,
+      "status": "pending"
+    },
+    {
+      "action": "CREATE_CASE",
+      "route": "auto",
+      "reason": "Fraud probability above monitoring threshold (0.30)",
+      "policy_rule": "R3",
+      "priority": 2,
+      "is_mandatory": true,
+      "status": "pending"
+    },
+    {
+      "action": "BLOCK_CARD",
+      "route": "L1",
+      "reason": "No customer response with high fraud probability",
+      "policy_rule": "R10",
+      "priority": 3,
+      "is_mandatory": true,
+      "status": "pending"
+    },
+    {
+      "action": "WARN_CUSTOMER",
+      "route": "auto",
+      "reason": "No customer response with high fraud probability",
+      "policy_rule": "R10",
+      "priority": 4,
+      "is_mandatory": true,
+      "status": "pending"
+    }
+  ],
+  "what_changed": "New evidence: 'Historical memory: 1 similar cases found \u2014 mixed outcomes.'\n\nRisk changed: HIGH \u2192 HIGH\nFraud probability: 70% \u2192 70% (\u21911%)\nConfidence: 84% \u2192 88% (\u21914%)",
+  "final_verdict": "fraud",
+  "exposure_usd": NaN,
+  "sar": {
+    "file": false,
+    "reason": "Not required by policy threshold",
+    "narrative": "",
+    "subjects": [],
+    "total_amount_usd": 0.0,
+    "activity_dates": []
+  },
+  "timeline": [
+    {
+      "event_type": "CASE_CREATED",
+      "description": "Investigation triggered by customer_report",
+      "timestamp": "2026-09-22T13:52:59.506088",
+      "metadata": {}
+    },
+    {
+      "event_type": "STATUS_CHANGE:TRIGGERED   INVESTIGATING",
+      "description": "Building investigation plan",
+      "timestamp": "2026-09-22T13:52:59.506088",
+      "metadata": {}
+    },
+    {
+      "event_type": "INITIAL_ASSESSMENT",
+      "description": "Initial risk: HIGH (70% probability)",
+      "timestamp": "2026-09-22T13:53:02.685973",
+      "metadata": {}
+    },
+    {
+      "event_type": "STATUS_CHANGE:INVESTIGATING   AWAITING_EVIDENCE",
+      "description": "Requesting additional evidence",
+      "timestamp": "2026-09-22T13:53:02.685973",
+      "metadata": {}
+    },
+    {
+      "event_type": "STATUS_CHANGE:AWAITING_EVIDENCE   REASSESSING",
+      "description": "New evidence received \u2014 reassessing",
+      "timestamp": "2026-09-22T13:53:02.686485",
+      "metadata": {}
+    },
+    {
+      "event_type": "STATUS_CHANGE:REASSESSING   AWAITING_EVIDENCE",
+      "description": "Requesting additional evidence",
+      "timestamp": "2026-09-22T13:53:05.348572",
+      "metadata": {}
+    },
+    {
+      "event_type": "FINAL_ASSESSMENT",
+      "description": "Final risk: HIGH (70% probability)",
+      "timestamp": "2026-09-22T13:53:05.348572",
+      "metadata": {}
+    },
+    {
+      "event_type": "STATUS_CHANGE:AWAITING_EVIDENCE   ACTION_RECOMMENDED",
+      "description": "Generating Next-Best-Action",
+      "timestamp": "2026-09-22T13:53:05.348572",
+      "metadata": {}
+    },
+    {
+      "event_type": "NBA_INITIAL",
+      "description": "NBA generated: ['MONITOR_ACCOUNT', 'CREATE_CASE', 'BLOCK_CARD', 'WARN_CUSTOMER']",
+      "timestamp": "2026-09-22T13:53:05.349891",
+      "metadata": {}
+    },
+    {
+      "event_type": "NBA_FINAL",
+      "description": "NBA generated: ['MONITOR_ACCOUNT', 'CREATE_CASE', 'BLOCK_CARD', 'WARN_CUSTOMER']",
+      "timestamp": "2026-09-22T13:53:05.349891",
+      "metadata": {}
+    },
+    {
+      "event_type": "STATUS_CHANGE:ACTION_RECOMMENDED   AWAITING_APPROVAL",
+      "description": "Awaiting L1 analyst approval",
+      "timestamp": "2026-09-22T13:53:05.349891",
+      "metadata": {}
+    },
+    {
+      "event_type": "STATUS_CHANGE:AWAITING_APPROVAL   RESOLVED",
+      "description": "Case resolved: FRAUD",
+      "timestamp": "2026-09-22T13:53:05.349891",
+      "metadata": {}
+    }
+  ],
+  "similar_cases": [
+    {
+      "case_id": "",
+      "similarity_score": 0.0,
+      "similarity_reasons": [
+        "Graph pattern match"
+      ],
+      "pattern": "unknown",
+      "outcome": "unknown",
+      "actions_taken": [
+        ""
+      ],
+      "analyst_notes_excerpt": ""
+    }
+  ],
+  "tool_calls": [],
+  "investigation_rounds": 1,
+  "case": {
+    "status": "closed_fraud",
+    "verdict": "fraud",
+    "fraud_probability": 0.702,
+    "pattern": "account_takeover",
+    "pattern_description": "",
+    "affected_txn_ids": [],
+    "first_suspicious_txn_id": "",
+    "connected_card_ids": [
+      "C08623-K2"
+    ],
+    "connected_device_profiles": [],
+    "exposure_usd": NaN,
+    "evidence": [
+      {
+        "claim": "Transaction retrieved \u2014 amount $0.00 via . Risk score unavailable.",
+        "source": "graph",
+        "ref": "get_transaction",
+        "entity_ids": [
+          ""
+        ]
+      },
+      {
+        "claim": "Card history retrieved: 1 transactions. No anomalous pattern detected.",
+        "source": "graph",
+        "ref": "get_card_history",
+        "entity_ids": [
+          "C08623-K2"
+        ]
+      },
+      {
+        "claim": "No device neighbors found \u2014 device profile is unique to this transaction.",
+        "source": "graph",
+        "ref": "get_device_neighbors",
+        "entity_ids": []
+      },
+      {
+        "claim": "No connected cards found via device graph \u2014 this card appears isolated.",
+        "source": "graph",
+        "ref": "find_connected_cards",
+        "entity_ids": [
+          "C08623-K2"
+        ]
+      },
+      {
+        "claim": "Transaction originated from a new/unrecognized device \u2014 no prior transaction history from this device profile. Account takeover signal.",
+        "source": "graph",
+        "ref": "detect_new_device_usage",
+        "entity_ids": [
+          "C08623-K2"
+        ]
+      },
+      {
+        "claim": "Historical memory: 1 similar cases found \u2014 mixed outcomes.",
+        "source": "document",
+        "ref": "search_similar_cases",
+        "entity_ids": []
+      },
+      {
+        "claim": "Customer explicitly denied making this transaction. States card was in their possession.",
+        "source": "customer",
+        "ref": "evidence_request:REQ-001",
+        "entity_ids": []
+      },
+      {
+        "claim": "Transaction retrieved \u2014 amount $0.00 via . Risk score unavailable.",
+        "source": "graph",
+        "ref": "get_transaction",
+        "entity_ids": [
+          ""
+        ]
+      },
+      {
+        "claim": "Card history retrieved: 1 transactions. No anomalous pattern detected.",
+        "source": "graph",
+        "ref": "get_card_history",
+        "entity_ids": [
+          "C08623-K2"
+        ]
+      },
+      {
+        "claim": "No device neighbors found \u2014 device profile is unique to this transaction.",
+        "source": "graph",
+        "ref": "get_device_neighbors",
+        "entity_ids": []
+      },
+      {
+        "claim": "No connected cards found via device graph \u2014 this card appears isolated.",
+        "source": "graph",
+        "ref": "find_connected_cards",
+        "entity_ids": [
+          "C08623-K2"
+        ]
+      },
+      {
+        "claim": "Transaction originated from a new/unrecognized device \u2014 no prior transaction history from this device profile. Account takeover signal.",
+        "source": "graph",
+        "ref": "detect_new_device_usage",
+        "entity_ids": [
+          "C08623-K2"
+        ]
+      },
+      {
+        "claim": "Historical memory: 1 similar cases found \u2014 mixed outcomes.",
+        "source": "document",
+        "ref": "search_similar_cases",
+        "entity_ids": []
+      }
+    ],
+    "similar_prior_cases": [],
+    "summary": "Investigation for HHG-003 concluded with verdict FRAUD (70% probability) under pattern account_takeover.",
+    "written_to_graph": true,
+    "graph_case_id": "HHG-003"
+  },
+  "next_best_actions": {
+    "initial": [
+      {
+        "action": "MONITOR_ACCOUNT",
+        "route": "auto",
+        "reason": "Fraud probability above monitoring threshold (0.30)"
+      },
+      {
+        "action": "CREATE_CASE",
+        "route": "auto",
+        "reason": "Fraud probability above monitoring threshold (0.30)"
+      },
+      {
+        "action": "BLOCK_CARD",
+        "route": "L1",
+        "reason": "No customer response with high fraud probability"
+      },
+      {
+        "action": "WARN_CUSTOMER",
+        "route": "auto",
+        "reason": "No customer response with high fraud probability"
+      }
+    ],
+    "final": [
+      {
+        "action": "MONITOR_ACCOUNT",
+        "route": "auto",
+        "reason": "Fraud probability above monitoring threshold (0.30)"
+      },
+      {
+        "action": "CREATE_CASE",
+        "route": "auto",
+        "reason": "Fraud probability above monitoring threshold (0.30)"
+      },
+      {
+        "action": "BLOCK_CARD",
+        "route": "L1",
+        "reason": "No customer response with high fraud probability"
+      },
+      {
+        "action": "WARN_CUSTOMER",
+        "route": "auto",
+        "reason": "No customer response with high fraud probability"
+      }
+    ],
+    "what_changed": "nothing"
+  },
+  "evidence_requests": [
+    {
+      "type": "customer_validation",
+      "asked_after_step": 1,
+      "assumed_response": "Customer denied unauthorized charges"
+    }
+  ],
+  "stop_reason": "Defensible decision reached with conclusive graph evidence",
+  "tokens": 0,
+  "latency_s": 5.84
+}

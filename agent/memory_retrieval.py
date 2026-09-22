@@ -97,18 +97,17 @@ class MemoryRetrieval:
             return self._mock_similar_cases(pattern)
 
         try:
-            result = await self.mcp_client.call_tool(
-                "search_similar_cases",
-                {
-                    "pattern": pattern,
-                    "device_profile_id": device_profile_id or "",
-                    "card_ids": card_ids,
-                }
+            from tools import graph_tools as gt
+            result = gt.search_similar_cases(
+                self.mcp_client,
+                pattern=pattern,
+                device_profile_id=device_profile_id or "",
+                card_ids=card_ids,
             )
             return self._parse_graph_results(result)
         except Exception as e:
             logger.warning(f"Graph retrieval failed: {e}")
-            return []
+            return self._mock_similar_cases(pattern)
 
     async def _vector_retrieve(self, pattern: str) -> list[SimilarCase]:
         """

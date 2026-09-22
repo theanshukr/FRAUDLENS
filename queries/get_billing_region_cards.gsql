@@ -1,10 +1,24 @@
+-- ============================================================
 -- FraudLens Query: get_billing_region_cards
+-- Returns cards active in a billing region within N days
+-- ============================================================
+
 USE GRAPH FraudLens
-CREATE OR REPLACE QUERY get_billing_region_cards(STRING region_code, INT days) FOR GRAPH FraudLens SYNTAX V2 {
-    DATETIME cutoff = datetime_sub(now(), INTERVAL days DAY);
-    region_v = {BillingRegion.*};
-    cards = SELECT c FROM region_v:r-(BILLED_IN:e1)-Transaction:t-(MADE:e2)-Card:c
-            WHERE r.region_code == region_code AND t.ts >= cutoff;
+
+CREATE OR REPLACE QUERY get_billing_region_cards(STRING region_code, INT days) FOR GRAPH FraudLens SYNTAX V1 {
+    DATETIME cutoff;
+    cutoff = datetime_sub(now(), INTERVAL days DAY);
+    OrAccum @is_region_txn;
+    
+    txns_all = { Transaction.* };
+    region_txns = SELECT t FROM txns_all:t -(BILLED_IN:e)-> BillingRegion:r
+                  WHERE r.region_code == region_code AND t.ts >= cutoff
+                  ACCUM t.@is_region_txn = true;
+    
+    cards_all = { Card.* };
+    cards = SELECT c FROM cards_all:c -(MADE:e)-> Transaction:t
+            WHERE t.@is_region_txn == true;
+    
     PRINT cards;
 }
 INSTALL QUERY get_billing_region_cards

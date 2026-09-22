@@ -5,28 +5,30 @@
 
 USE GRAPH FraudLens
 
-CREATE OR REPLACE QUERY find_shared_devices(STRING card_id) FOR GRAPH FraudLens
-SYNTAX V2 {
-    /*
-     * Returns: Connected cards via shared device + device profile info
-     * Used to detect: same device used by multiple accounts (fraud ring signal)
-     */
-
-    SetAccum<VERTEX<DeviceProfile>> @@devices;
-    SetAccum<VERTEX<Card>>          @@connected_cards;
-
-    card_v = {Card.*};
-    seed   = SELECT c FROM card_v:c WHERE c.card_id == card_id;
-
-    -- Devices used by transactions of this card
-    devices = SELECT d FROM seed:c - (MADE:e1) - Transaction:t - (FROM_DEVICE:e2) - DeviceProfile:d
-              ACCUM @@devices += d;
-
-    -- Other cards that used same devices
-    other_cards = SELECT c2 FROM @@devices:d - (FROM_DEVICE:e) - Transaction:t - (MADE:e2) - Card:c2
-                  WHERE c2.card_id != card_id
-                  ACCUM @@connected_cards += c2;
-
+CREATE OR REPLACE QUERY find_shared_devices(STRING card_id) FOR GRAPH FraudLens SYNTAX V1 {
+    OrAccum @is_shared_device;
+    OrAccum @is_other_txn;
+    SetAccum<VERTEX> @@devices;
+    SetAccum<VERTEX> @@connected_cards;
+    
+    cards = { Card.* };
+    target_card = SELECT c FROM cards:c WHERE c.card_id == card_id;
+    
+    txns = SELECT t FROM target_card:c -(MADE:e)-> Transaction:t;
+    
+    devs = SELECT d FROM txns:t -(FROM_DEVICE:e)-> DeviceProfile:d
+           ACCUM d.@is_shared_device = true, @@devices += d;
+    
+    txns_all = { Transaction.* };
+    other_txns = SELECT t FROM txns_all:t -(FROM_DEVICE:e)-> DeviceProfile:d
+                 WHERE d.@is_shared_device == true
+                 ACCUM t.@is_other_txn = true;
+    
+    cards_all = { Card.* };
+    other_cards = SELECT c FROM cards_all:c -(MADE:e)-> Transaction:t
+                  WHERE t.@is_other_txn == true AND c.card_id != card_id
+                  ACCUM @@connected_cards += c;
+    
     PRINT @@devices, @@connected_cards;
 }
 INSTALL QUERY find_shared_devices

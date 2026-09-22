@@ -85,6 +85,7 @@ class NBAEngine:
         is_new_device: bool = False,
         out_of_region: bool = False,
         phase: Literal["initial", "final"] = "initial",
+        extracted_signals: dict = None,
     ) -> list[ActionRecommendation]:
         """
         Generate ordered action recommendations for a given assessment.
@@ -100,12 +101,26 @@ class NBAEngine:
             is_new_device:        Whether transaction used new/unknown device
             out_of_region:        Whether transaction is out of home region
             phase:                "initial" or "final" (after re-investigation)
+            extracted_signals:    Structured signals from RiskAssessment.extracted_signals
+                                  — overrides individual params when provided
 
         Returns:
             Ordered list of ActionRecommendation
         """
         if txn_sequence is None:
             txn_sequence = []
+        if extracted_signals is None:
+            extracted_signals = getattr(assessment, "extracted_signals", {}) or {}
+
+        # Override individual signal params from extracted_signals when available
+        exposure_usd         = exposure_usd or float(extracted_signals.get("amount", 0.0))
+        connected_fraud_cases = connected_fraud_cases or int(extracted_signals.get("connected_fraud_cases", 0))
+        shared_device_count  = shared_device_count  or int(extracted_signals.get("shared_device_count", 0))
+        velocity_count       = velocity_count       or int(extracted_signals.get("velocity_count", 0))
+        is_new_device        = is_new_device        or bool(extracted_signals.get("is_new_device", False))
+        out_of_region        = out_of_region        or bool(extracted_signals.get("out_of_region", False))
+        if not txn_sequence:
+            txn_sequence     = extracted_signals.get("txn_sequence", [])
 
         # 1. Get policy decisions (mandatory actions)
         policy: PolicyDecision = self.policy_engine.evaluate(
@@ -226,16 +241,16 @@ class NBAEngine:
 
         lines = [
             f"New evidence: '{new_evidence_claim}'",
-            f"",
-            f"Risk changed: {initial_assessment.risk_level}     {final_assessment.risk_level}",
-            f"Fraud probability: {initial_assessment.fraud_probability:.0%}     {final_assessment.fraud_probability:.0%} "
-            f"({'   ' if prob_delta > 0 else '   '}{abs(prob_delta):.0%})",
-            f"Confidence: {initial_assessment.confidence:.0%}     {final_assessment.confidence:.0%} "
-            f"({'   ' if conf_delta > 0 else '   '}{abs(conf_delta):.0%})",
+            "",
+            f"Risk changed: {initial_assessment.risk_level} → {final_assessment.risk_level}",
+            f"Fraud probability: {initial_assessment.fraud_probability:.0%} → {final_assessment.fraud_probability:.0%} "
+            f"({'↑' if prob_delta > 0 else '↓'}{abs(prob_delta):.0%})",
+            f"Confidence: {initial_assessment.confidence:.0%} → {final_assessment.confidence:.0%} "
+            f"({'↑' if conf_delta > 0 else '↓'}{abs(conf_delta):.0%})",
         ]
 
         if added:
-            lines.append(f"")
+            lines.append("")
             lines.append(f"New actions required: {', '.join(sorted(added))}")
         if removed:
             lines.append(f"Actions no longer needed: {', '.join(sorted(removed))}")

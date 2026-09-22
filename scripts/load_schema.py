@@ -44,13 +44,23 @@ def load_schema(dry_run: bool = False) -> None:
 
     try:
         import pyTigerGraph as tg
+        host = os.getenv("TG_HOST", "http://localhost")
+        secret = os.getenv("TG_SECRET", "")
+        token = os.getenv("TG_TOKEN", "") or os.getenv("TG_API_KEY", "")
+        is_cloud = "tgcloud.io" in host
+
         conn = tg.TigerGraphConnection(
-            host=os.getenv("TG_HOST", "http://localhost"),
+            host=host,
             graphname=os.getenv("TG_GRAPH_NAME", "FraudLens"),
             username=os.getenv("TG_USERNAME", "tigergraph"),
             password=os.getenv("TG_PASSWORD", "tigergraph"),
+            gsqlSecret=secret if (secret and secret != "your_secret_here") else "",
+            apiToken=token if token else "",
+            tgCloud=is_cloud,
         )
-        logger.info("Connected to TigerGraph")
+        if not token and secret and secret != "your_secret_here":
+            conn.getToken(secret)
+        logger.info(f"Connected to TigerGraph: {conn.host}")
 
         # Install schema
         logger.info("Installing schema...")

@@ -26,14 +26,21 @@ load_dotenv()
 def get_tg_connection() -> Optional[tg.TigerGraphConnection]:
     """Create and return an authenticated TigerGraph connection."""
     try:
+        host = os.getenv("TG_HOST", "http://localhost")
+        secret = os.getenv("TG_SECRET", "")
+        token = os.getenv("TG_TOKEN", "") or os.getenv("TG_API_KEY", "")
+        is_cloud = "tgcloud.io" in host
+
         conn = tg.TigerGraphConnection(
-            host=os.getenv("TG_HOST", "http://localhost"),
+            host=host,
             graphname=os.getenv("TG_GRAPH_NAME", "FraudLens"),
             username=os.getenv("TG_USERNAME", "tigergraph"),
             password=os.getenv("TG_PASSWORD", "tigergraph"),
+            gsqlSecret=secret if (secret and secret != "your_secret_here") else "",
+            apiToken=token if token else "",
+            tgCloud=is_cloud,
         )
-        secret = os.getenv("TG_SECRET", "")
-        if secret and secret != "your_secret_here":
+        if not token and secret and secret != "your_secret_here":
             conn.getToken(secret)
         logger.info(f"Connected to TigerGraph: {conn.host}/{conn.graphname}")
         return conn
@@ -154,18 +161,14 @@ def detect_velocity_anomaly(conn: tg.TigerGraphConnection, card_id: str, hours: 
 def search_similar_cases(
     conn: tg.TigerGraphConnection,
     pattern: str,
-    device_profile_id: str,
-    card_ids: list[str],
+    device_profile_id: str = "",
+    card_ids: list[str] = None,
 ) -> dict:
     """Search for similar historical fraud cases."""
     try:
         result = conn.runInstalledQuery(
             "search_similar_cases",
-            params={
-                "pattern": pattern,
-                "device_profile_id": device_profile_id,
-                "card_ids": card_ids,
-            }
+            params={"pattern": pattern}
         )
         return {"success": True, "results": result, "entity_ids": []}
     except Exception as e:
