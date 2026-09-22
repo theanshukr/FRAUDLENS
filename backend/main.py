@@ -42,6 +42,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import math
 import os
 import uuid
 from dataclasses import dataclass, field
@@ -79,8 +80,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-CASES_DIR   = Path(os.getenv("CASES_DIR", "./cases"))
-SAMPLE_DIR  = Path("./dataset_sample")
+_project_root = Path(__file__).parent.parent.resolve()
+_env_cases = os.getenv("CASES_DIR", "cases")
+CASES_DIR = Path(_env_cases) if Path(_env_cases).is_absolute() else (_project_root / _env_cases).resolve()
+
+_env_sample = os.getenv("SAMPLE_DIR", "dataset_sample")
+SAMPLE_DIR = Path(_env_sample) if Path(_env_sample).is_absolute() else (_project_root / _env_sample).resolve()
+
 CASES_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -117,14 +123,26 @@ def _get_inv(case_id: str) -> InvestigationStore:
     return _store[case_id]
 
 
+def _replace_nan_with_none(obj: Any) -> Any:
+    if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
+        return None
+    elif isinstance(obj, dict):
+        return {k: _replace_nan_with_none(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_replace_nan_with_none(v) for v in obj]
+    return obj
+
+
 def _load_case_from_disk(case_id: str) -> Optional[dict]:
     """Load a completed case JSON from disk."""
     case_file = CASES_DIR / f"{case_id}.json"
     if case_file.exists():
         try:
             with open(case_file) as f:
-                return json.load(f)
-        except Exception:
+                data = json.load(f)
+                return _replace_nan_with_none(data)
+        except Exception as e:
+            logger.error(f"Error loading case {case_id}: {e}")
             return None
     return None
 
@@ -921,7 +939,7 @@ async def get_dashboard():
     for f in case_files:
         try:
             with open(f) as fp:
-                cases.append(json.load(fp))
+                cases.append(_replace_nan_with_none(json.load(fp)))
         except Exception:
             pass
 
@@ -964,7 +982,7 @@ async def list_cases(
     for f in case_files:
         try:
             with open(f) as fp:
-                data = json.load(fp)
+                data = _replace_nan_with_none(json.load(fp))
                 if verdict and data.get("final_verdict") != verdict:
                     continue
                 cases.append({

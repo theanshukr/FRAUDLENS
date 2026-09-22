@@ -1,11 +1,11 @@
 {
   "case_id": "HHG-004",
-  "txn_id": "",
+  "txn_id": "T_5566778899",
   "card_id": "C08106-K1",
   "customer_id": null,
   "trigger_type": "customer_report",
-  "trigger_risk_score": NaN,
-  "status": "RESOLVED",
+  "trigger_risk_score": null,
+  "status": "ACTION_TAKEN",
   "created_at": "2026-09-22T13:53:06.593154",
   "updated_at": "2026-09-22T13:53:10.879857",
   "initial_risk_level": "HIGH",
@@ -23,7 +23,7 @@
       "source": "graph",
       "ref": "get_transaction",
       "entity_ids": [
-        ""
+        "T_5566778899"
       ],
       "confidence": 0.4,
       "timestamp": "2026-09-22T13:53:06.847958",
@@ -38,7 +38,8 @@
       "source": "graph",
       "ref": "get_card_history",
       "entity_ids": [
-        "C08106-K1"
+        "C08106-K1",
+        "M_12345"
       ],
       "confidence": 0.55,
       "timestamp": "2026-09-22T13:53:07.096701",
@@ -53,7 +54,10 @@
       "claim": "No device neighbors found \u2014 device profile is unique to this transaction.",
       "source": "graph",
       "ref": "get_device_neighbors",
-      "entity_ids": [],
+      "entity_ids": [
+        "T_5566778899",
+        "D_998877"
+      ],
       "confidence": 0.55,
       "timestamp": "2026-09-22T13:53:07.343185",
       "raw_data": {
@@ -67,6 +71,7 @@
       "source": "graph",
       "ref": "find_connected_cards",
       "entity_ids": [
+        "D_998877",
         "C08106-K1"
       ],
       "confidence": 0.6,
@@ -126,7 +131,7 @@
       "source": "graph",
       "ref": "get_transaction",
       "entity_ids": [
-        ""
+        "T_5566778899"
       ],
       "confidence": 0.4,
       "timestamp": "2026-09-22T13:53:08.593063",
@@ -141,7 +146,8 @@
       "source": "graph",
       "ref": "get_card_history",
       "entity_ids": [
-        "C08106-K1"
+        "C08106-K1",
+        "M_12345"
       ],
       "confidence": 0.55,
       "timestamp": "2026-09-22T13:53:09.443430",
@@ -156,7 +162,10 @@
       "claim": "No device neighbors found \u2014 device profile is unique to this transaction.",
       "source": "graph",
       "ref": "get_device_neighbors",
-      "entity_ids": [],
+      "entity_ids": [
+        "T_5566778899",
+        "D_998877"
+      ],
       "confidence": 0.55,
       "timestamp": "2026-09-22T13:53:09.751364",
       "raw_data": {
@@ -170,6 +179,7 @@
       "source": "graph",
       "ref": "find_connected_cards",
       "entity_ids": [
+        "D_998877",
         "C08106-K1"
       ],
       "confidence": 0.6,
@@ -258,7 +268,10 @@
       "policy_rule": "R3",
       "priority": 1,
       "is_mandatory": true,
-      "status": "pending"
+      "status": "approved",
+      "approved_by": "Analyst",
+      "approved_at": "2026-09-22T19:07:03.796506+00:00",
+      "notes": null
     },
     {
       "action": "CREATE_CASE",
@@ -267,7 +280,10 @@
       "policy_rule": "R3",
       "priority": 2,
       "is_mandatory": true,
-      "status": "pending"
+      "status": "approved",
+      "approved_by": "Analyst",
+      "approved_at": "2026-09-22T19:07:05.013209+00:00",
+      "notes": null
     },
     {
       "action": "BLOCK_CARD",
@@ -276,7 +292,10 @@
       "policy_rule": "R10",
       "priority": 3,
       "is_mandatory": true,
-      "status": "pending"
+      "status": "approved",
+      "approved_by": "Analyst",
+      "approved_at": "2026-09-22T19:06:57.076215+00:00",
+      "notes": null
     },
     {
       "action": "WARN_CUSTOMER",
@@ -285,12 +304,15 @@
       "policy_rule": "R10",
       "priority": 4,
       "is_mandatory": true,
-      "status": "pending"
+      "status": "approved",
+      "approved_by": "Analyst",
+      "approved_at": "2026-09-22T19:07:00.647839+00:00",
+      "notes": null
     }
   ],
   "what_changed": "New evidence: 'Historical memory: 1 similar cases found \u2014 mixed outcomes.'\n\nRisk changed: HIGH \u2192 HIGH\nFraud probability: 70% \u2192 70% (\u21911%)\nConfidence: 84% \u2192 88% (\u21914%)",
   "final_verdict": "fraud",
-  "exposure_usd": NaN,
+  "exposure_usd": null,
   "sar": {
     "file": false,
     "reason": "Not required by policy threshold",
@@ -371,6 +393,30 @@
       "description": "Case resolved: FRAUD",
       "timestamp": "2026-09-22T13:53:10.879857",
       "metadata": {}
+    },
+    {
+      "event_type": "action_approved",
+      "description": "Action 'BLOCK_CARD' approved by Analyst",
+      "timestamp": "2026-09-22T19:06:57.076215+00:00",
+      "actor": "Analyst"
+    },
+    {
+      "event_type": "action_approved",
+      "description": "Action 'WARN_CUSTOMER' approved by Analyst",
+      "timestamp": "2026-09-22T19:07:00.647839+00:00",
+      "actor": "Analyst"
+    },
+    {
+      "event_type": "action_approved",
+      "description": "Action 'MONITOR_ACCOUNT' approved by Analyst",
+      "timestamp": "2026-09-22T19:07:03.796506+00:00",
+      "actor": "Analyst"
+    },
+    {
+      "event_type": "action_approved",
+      "description": "Action 'CREATE_CASE' approved by Analyst",
+      "timestamp": "2026-09-22T19:07:05.013209+00:00",
+      "actor": "Analyst"
     }
   ],
   "similar_cases": [
@@ -402,101 +448,209 @@
       "C08106-K1"
     ],
     "connected_device_profiles": [],
-    "exposure_usd": NaN,
+    "exposure_usd": null,
     "evidence": [
       {
+        "evidence_id": "EVD-0001",
         "claim": "Transaction retrieved \u2014 amount $0.00 via . Risk score unavailable.",
         "source": "graph",
         "ref": "get_transaction",
         "entity_ids": [
-          ""
-        ]
+          "T_5566778899"
+        ],
+        "confidence": 0.4,
+        "timestamp": "2026-09-22T13:53:06.847958",
+        "raw_data": {
+          "@@results": []
+        },
+        "supports_fraud": null
       },
       {
+        "evidence_id": "EVD-0002",
         "claim": "Card history retrieved: 1 transactions. No anomalous pattern detected.",
         "source": "graph",
         "ref": "get_card_history",
         "entity_ids": [
-          "C08106-K1"
-        ]
+          "C08106-K1",
+          "M_12345"
+        ],
+        "confidence": 0.55,
+        "timestamp": "2026-09-22T13:53:07.096701",
+        "raw_data": {
+          "transaction_count": 1,
+          "micro_txn_count": 1
+        },
+        "supports_fraud": null
       },
       {
+        "evidence_id": "EVD-0003",
         "claim": "No device neighbors found \u2014 device profile is unique to this transaction.",
         "source": "graph",
         "ref": "get_device_neighbors",
-        "entity_ids": []
+        "entity_ids": [
+          "T_5566778899",
+          "D_998877"
+        ],
+        "confidence": 0.55,
+        "timestamp": "2026-09-22T13:53:07.343185",
+        "raw_data": {
+          "shared_device_count": 0
+        },
+        "supports_fraud": false
       },
       {
+        "evidence_id": "EVD-0004",
         "claim": "No connected cards found via device graph \u2014 this card appears isolated.",
         "source": "graph",
         "ref": "find_connected_cards",
         "entity_ids": [
+          "D_998877",
           "C08106-K1"
-        ]
+        ],
+        "confidence": 0.6,
+        "timestamp": "2026-09-22T13:53:07.592560",
+        "raw_data": {
+          "ring_size": 1,
+          "connected_card_ids": []
+        },
+        "supports_fraud": false
       },
       {
+        "evidence_id": "EVD-0005",
         "claim": "Transaction originated from a new/unrecognized device \u2014 no prior transaction history from this device profile. Account takeover signal.",
         "source": "graph",
         "ref": "detect_new_device_usage",
         "entity_ids": [
           "C08106-K1"
-        ]
+        ],
+        "confidence": 0.78,
+        "timestamp": "2026-09-22T13:53:07.842274",
+        "raw_data": {
+          "is_new_device": true
+        },
+        "supports_fraud": true
       },
       {
+        "evidence_id": "EVD-0006",
         "claim": "Historical memory: 1 similar cases found \u2014 mixed outcomes.",
         "source": "document",
         "ref": "search_similar_cases",
-        "entity_ids": []
+        "entity_ids": [],
+        "confidence": 0.6,
+        "timestamp": "2026-09-22T13:53:08.089791",
+        "raw_data": {
+          "result_count": 1,
+          "fraud_case_count": 0
+        },
+        "supports_fraud": null
       },
       {
+        "evidence_id": "EVD-SIM-REQ-001",
         "claim": "Customer explicitly denied making this transaction. States card was in their possession.",
         "source": "customer",
         "ref": "evidence_request:REQ-001",
-        "entity_ids": []
+        "entity_ids": [],
+        "confidence": 0.9,
+        "timestamp": "2026-09-22T13:53:08.343498",
+        "raw_data": {
+          "request_id": "REQ-001",
+          "scenario": "deny"
+        },
+        "supports_fraud": true
       },
       {
+        "evidence_id": "EVD-0007",
         "claim": "Transaction retrieved \u2014 amount $0.00 via . Risk score unavailable.",
         "source": "graph",
         "ref": "get_transaction",
         "entity_ids": [
-          ""
-        ]
+          "T_5566778899"
+        ],
+        "confidence": 0.4,
+        "timestamp": "2026-09-22T13:53:08.593063",
+        "raw_data": {
+          "@@results": []
+        },
+        "supports_fraud": null
       },
       {
+        "evidence_id": "EVD-0008",
         "claim": "Card history retrieved: 1 transactions. No anomalous pattern detected.",
         "source": "graph",
         "ref": "get_card_history",
         "entity_ids": [
-          "C08106-K1"
-        ]
+          "C08106-K1",
+          "M_12345"
+        ],
+        "confidence": 0.55,
+        "timestamp": "2026-09-22T13:53:09.443430",
+        "raw_data": {
+          "transaction_count": 1,
+          "micro_txn_count": 1
+        },
+        "supports_fraud": null
       },
       {
+        "evidence_id": "EVD-0009",
         "claim": "No device neighbors found \u2014 device profile is unique to this transaction.",
         "source": "graph",
         "ref": "get_device_neighbors",
-        "entity_ids": []
+        "entity_ids": [
+          "T_5566778899",
+          "D_998877"
+        ],
+        "confidence": 0.55,
+        "timestamp": "2026-09-22T13:53:09.751364",
+        "raw_data": {
+          "shared_device_count": 0
+        },
+        "supports_fraud": false
       },
       {
+        "evidence_id": "EVD-0010",
         "claim": "No connected cards found via device graph \u2014 this card appears isolated.",
         "source": "graph",
         "ref": "find_connected_cards",
         "entity_ids": [
+          "D_998877",
           "C08106-K1"
-        ]
+        ],
+        "confidence": 0.6,
+        "timestamp": "2026-09-22T13:53:10.058449",
+        "raw_data": {
+          "ring_size": 1,
+          "connected_card_ids": []
+        },
+        "supports_fraud": false
       },
       {
+        "evidence_id": "EVD-0011",
         "claim": "Transaction originated from a new/unrecognized device \u2014 no prior transaction history from this device profile. Account takeover signal.",
         "source": "graph",
         "ref": "detect_new_device_usage",
         "entity_ids": [
           "C08106-K1"
-        ]
+        ],
+        "confidence": 0.78,
+        "timestamp": "2026-09-22T13:53:10.359786",
+        "raw_data": {
+          "is_new_device": true
+        },
+        "supports_fraud": true
       },
       {
+        "evidence_id": "EVD-0012",
         "claim": "Historical memory: 1 similar cases found \u2014 mixed outcomes.",
         "source": "document",
         "ref": "search_similar_cases",
-        "entity_ids": []
+        "entity_ids": [],
+        "confidence": 0.6,
+        "timestamp": "2026-09-22T13:53:10.615859",
+        "raw_data": {
+          "result_count": 1,
+          "fraud_case_count": 0
+        },
+        "supports_fraud": null
       }
     ],
     "similar_prior_cases": [],

@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Layout */
+    --background: 245 247 251;
+    --foreground: 9 9 11;
+
+    --surface: 255 255 255;
+    --surface-foreground: 9 9 11;
+
+    --secondary: 238 243 249;
+    --secondary-foreground: 30 41 59;
+
+    --border: 226 232 240;
+    --input: 226 232 240;
+    --ring: 59 130 246;
+
+    /* Semantic Colors */
+    --primary: 59 130 246; /* Blue 500 */
+    --primary-foreground: 255 255 255;
+
+    --primary-light: 239 246 255; /* Blue 50 */
+    
+    --accent: 6 182 212; /* Cyan 500 */
+    --accent-foreground: 255 255 255;
+    
+    --success: 16 185 129; /* Green 500 */
+    --success-foreground: 255 255 255;
+    
+    --warning: 245 158 11; /* Amber 500 */
+    --warning-foreground: 255 255 255;
+    
+    --danger: 239 68 68; /* Red 500 */
+    --danger-foreground: 255 255 255;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Layout */
+    --background: 11 15 23;
+    --foreground: 248 250 252;
+
+    --surface: 17 24 39;
+    --surface-foreground: 248 250 252;
+
+    --secondary: 23 32 51;
+    --secondary-foreground: 203 213 225;
+
+    --border: 30 41 59;
+    --input: 30 41 59;
+    --ring: 59 130 246;
+
+    /* Semantic Colors */
+    --primary: 59 130 246; /* Blue 500 */
+    --primary-foreground: 255 255 255;
+
+    --primary-light: 30 58 138; /* Blue 900 */
+    
+    --accent: 6 182 212; /* Cyan 500 */
+    --accent-foreground: 255 255 255;
+    
+    --success: 16 185 129; /* Green 500 */
+    --success-foreground: 255 255 255;
+    
+    --warning: 245 158 11; /* Amber 500 */
+    --warning-foreground: 255 255 255;
+    
+    --danger: 239 68 68; /* Red 500 */
+    --danger-foreground: 255 255 255;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-primary/20;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Custom scrollbar for a premium feel */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-border rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-secondary-foreground/20;
+}

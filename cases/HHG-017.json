@@ -1,8 +1,8 @@
 {
   "case_id": "HHG-017",
-  "txn_id": "",
+  "txn_id": "T_99990000",
   "card_id": "C04570-K1",
-  "customer_id": null,
+  "customer_id": "C_112233",
   "trigger_type": "risk_score",
   "trigger_risk_score": 0.57,
   "status": "RESOLVED",
@@ -23,7 +23,7 @@
       "source": "graph",
       "ref": "get_transaction",
       "entity_ids": [
-        ""
+        "T_99990000"
       ],
       "confidence": 0.4,
       "timestamp": "2026-09-22T13:48:40.433440",
@@ -38,7 +38,8 @@
       "source": "graph",
       "ref": "get_card_history",
       "entity_ids": [
-        "C04570-K1"
+        "C04570-K1",
+        "C_112233"
       ],
       "confidence": 0.55,
       "timestamp": "2026-09-22T13:48:40.678819",
@@ -53,7 +54,11 @@
       "claim": "No device neighbors found \u2014 device profile is unique to this transaction.",
       "source": "graph",
       "ref": "get_device_neighbors",
-      "entity_ids": [],
+      "entity_ids": [
+        "T_99990000",
+        "D_AAABBB",
+        "D_CCCDDD"
+      ],
       "confidence": 0.55,
       "timestamp": "2026-09-22T13:48:40.943315",
       "raw_data": {
@@ -67,7 +72,8 @@
       "source": "graph",
       "ref": "find_connected_cards",
       "entity_ids": [
-        "C04570-K1"
+        "D_CCCDDD",
+        "CARD_X9Y8"
       ],
       "confidence": 0.6,
       "timestamp": "2026-09-22T13:48:41.204130",
@@ -97,7 +103,10 @@
       "claim": "Historical memory: 1 similar cases found \u2014 mixed outcomes.",
       "source": "document",
       "ref": "search_similar_cases",
-      "entity_ids": [],
+      "entity_ids": [
+        "C04570-K1",
+        "CC-0099"
+      ],
       "confidence": 0.6,
       "timestamp": "2026-09-22T13:48:41.872941",
       "raw_data": {
@@ -126,7 +135,7 @@
       "source": "graph",
       "ref": "get_transaction",
       "entity_ids": [
-        ""
+        "T_99990000"
       ],
       "confidence": 0.4,
       "timestamp": "2026-09-22T13:48:42.425047",
@@ -141,7 +150,8 @@
       "source": "graph",
       "ref": "get_card_history",
       "entity_ids": [
-        "C04570-K1"
+        "C04570-K1",
+        "C_112233"
       ],
       "confidence": 0.55,
       "timestamp": "2026-09-22T13:48:42.687312",
@@ -156,7 +166,11 @@
       "claim": "No device neighbors found \u2014 device profile is unique to this transaction.",
       "source": "graph",
       "ref": "get_device_neighbors",
-      "entity_ids": [],
+      "entity_ids": [
+        "T_99990000",
+        "D_AAABBB",
+        "D_CCCDDD"
+      ],
       "confidence": 0.55,
       "timestamp": "2026-09-22T13:48:42.934770",
       "raw_data": {
@@ -170,7 +184,8 @@
       "source": "graph",
       "ref": "find_connected_cards",
       "entity_ids": [
-        "C04570-K1"
+        "D_CCCDDD",
+        "CARD_X9Y8"
       ],
       "confidence": 0.6,
       "timestamp": "2026-09-22T13:48:43.181220",
@@ -200,7 +215,10 @@
       "claim": "Historical memory: 1 similar cases found \u2014 mixed outcomes.",
       "source": "document",
       "ref": "search_similar_cases",
-      "entity_ids": [],
+      "entity_ids": [
+        "C04570-K1",
+        "CC-0099"
+      ],
       "confidence": 0.6,
       "timestamp": "2026-09-22T13:48:43.675693",
       "raw_data": {
