@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-24T00:28:50.339795",
+  "generated_at": "2026-09-24T01:25:26.711045",
   "total_cases_validated": 20,
   "missing_cases": [],
   "metrics": {
@@ -32,49 +32,49 @@
   "synthetic_data_findings": [
     {
       "file": "backend\\main.py",
-      "line": 584,
+      "line": 586,
       "pattern": "$482.12",
       "description": "Hardcoded transaction amount from case HHG-006 template",
       "content": "- Hardcoded '$482.12' transaction amounts"
     },
     {
       "file": "backend\\main.py",
-      "line": 585,
+      "line": 587,
       "pattern": "DEV_FP_",
       "description": "Fake device ID generated from txn_id substring",
       "content": "- DEV_FP_{txn_id[-4:]} generated device IDs"
     },
     {
       "file": "backend\\main.py",
-      "line": 587,
+      "line": 589,
       "pattern": "REGION_",
       "description": "Fake billing region ID generated from txn_id substring",
       "content": "- REGION_{txn_id[-3:]} generated billing region IDs"
     },
     {
       "file": "backend\\main.py",
-      "line": 586,
+      "line": 588,
       "pattern": "base_txn_num - 2",
       "description": "Arithmetic fake prior transaction",
       "content": "- base_txn_num - 2 / base_txn_num - 1420 arithmetic transactions"
     },
     {
       "file": "backend\\main.py",
-      "line": 586,
+      "line": 588,
       "pattern": "base_txn_num - 1420",
       "description": "Arithmetic fake prior transaction",
       "content": "- base_txn_num - 2 / base_txn_num - 1420 arithmetic transactions"
     },
     {
       "file": "backend\\main.py",
-      "line": 588,
+      "line": 590,
       "pattern": "CUST_",
       "description": "Fallback synthetic customer ID",
       "content": "- CUST_{txn_id[-4:]} generated customer IDs"
     },
     {
       "file": "backend\\main.py",
-      "line": 617,
+      "line": 619,
       "pattern": "CUST_",
       "description": "Fallback synthetic customer ID",
       "content": "# Do NOT fabricate CUST_XXXX \u2014 leave blank if no real ID"
@@ -207,7 +207,7 @@
     },
     {
       "file": "agent\\orchestrator.py",
-      "line": 586,
+      "line": 610,
       "pattern": "D_MOCK_001",
       "description": "Mock device ID from _mock_similar_cases()",
       "content": "card_id=\"CARD_MOCK_001\","
@@ -221,66 +221,45 @@
     },
     {
       "file": "tools\\graph_tools.py",
-      "line": 190,
+      "line": 282,
       "pattern": "REGION_",
       "description": "Fake billing region ID generated from txn_id substring",
-      "content": "# Fallback: use get_billing_region_cards which traverses BillingRegion"
+      "content": "# Fallback: get_billing_region_cards"
     },
     {
       "file": "tools\\graph_tools.py",
-      "line": 193,
+      "line": 283,
       "pattern": "REGION_",
       "description": "Fake billing region ID generated from txn_id substring",
-      "content": "\"get_billing_region_cards\","
+      "content": "fb_res = get_billing_region_cards(conn, card_id, days=days)"
     },
     {
       "file": "tools\\graph_tools.py",
-      "line": 194,
+      "line": 285,
       "pattern": "REGION_",
       "description": "Fake billing region ID generated from txn_id substring",
-      "content": "params={\"region_code\": card_id, \"days\": days}"
+      "content": "fb_res[\"_fallback\"] = \"get_billing_region_cards\""
     },
     {
       "file": "tools\\graph_tools.py",
-      "line": 197,
+      "line": 321,
       "pattern": "REGION_",
       "description": "Fake billing region ID generated from txn_id substring",
-      "content": "\"_fallback\": \"get_billing_region_cards\"}"
+      "content": "def get_billing_region_cards(conn: Optional[tg.TigerGraphConnection], region_code: str, days: int = 30) -> dict:"
     },
     {
       "file": "tools\\graph_tools.py",
-      "line": 230,
+      "line": 323,
       "pattern": "REGION_",
       "description": "Fake billing region ID generated from txn_id substring",
-      "content": "def get_billing_region_cards(conn: tg.TigerGraphConnection, region_code: str, days: int = 30) -> dict:"
+      "content": "res = execute_graph_query(conn, \"get_billing_region_cards\", {\"region_code\": str(region_code), \"days\": int(days)})"
     },
     {
       "file": "tools\\graph_tools.py",
-      "line": 234,
+      "line": 328,
       "pattern": "REGION_",
       "description": "Fake billing region ID generated from txn_id substring",
-      "content": "\"get_billing_region_cards\","
-    },
-    {
-      "file": "tools\\graph_tools.py",
-      "line": 235,
-      "pattern": "REGION_",
-      "description": "Fake billing region ID generated from txn_id substring",
-      "content": "params={\"region_code\": region_code, \"days\": days}"
-    },
-    {
-      "file": "tools\\graph_tools.py",
-      "line": 237,
-      "pattern": "REGION_",
-      "description": "Fake billing region ID generated from txn_id substring",
-      "content": "return {\"success\": True, \"results\": result, \"entity_ids\": [region_code]}"
-    },
-    {
-      "file": "tools\\graph_tools.py",
-      "line": 239,
-      "pattern": "REGION_",
-      "description": "Fake billing region ID generated from txn_id substring",
-      "content": "logger.error(f\"get_billing_region_cards failed: {e}\")"
+      "content": "\"entity_ids\": [str(region_code)],"
     }
   ],
   "cases": [

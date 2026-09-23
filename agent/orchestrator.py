@@ -206,6 +206,30 @@ class Orchestrator:
 
         yield self._event("case_created", f"Case {case.case_id} created", case_id=case.case_id)
 
+        # --- Check Graph Access Mode & MCP ---
+        from tools.tigergraph_mcp_client import get_mcp_client, GraphAccessMode
+        from tools.graph_tools import get_graph_access_mode
+
+        mcp = get_mcp_client()
+        mcp_healthy = mcp.is_connected()
+        current_mode = get_graph_access_mode()
+
+        if mcp_healthy and current_mode in (GraphAccessMode.MCP, GraphAccessMode.AUTO):
+            yield self._event(
+                "mcp_session",
+                f"TigerGraph MCP session active • {len(mcp.list_tools())} tools discovered • host: {mcp.host}",
+                access_mode="mcp",
+                provider="TigerGraph MCP",
+                tool_count=len(mcp.list_tools()),
+            )
+        else:
+            yield self._event(
+                "mcp_session",
+                "TigerGraph Direct SDK active (pyTigerGraph)",
+                access_mode="direct",
+                provider="pyTigerGraph",
+            )
+
         # --- Plan ---
         self.case_manager.transition(case, CaseStatus.INVESTIGATING, "Building investigation plan")
         yield self._event("step", "Building investigation plan", step="plan_investigation")

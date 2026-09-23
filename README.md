@@ -9,19 +9,27 @@ FraudLens is an **AI fraud investigator** — not a chatbot, not a classifier. I
 
 ## Architecture
 
-```
-Frontend (Next.js)
-      ↕ SSE streaming
-Backend (FastAPI)
-      ↕
-Agent Orchestrator (LangGraph)
-   ├── Planner
-   ├── Evidence Collector  ←─→  TigerGraph (via MCP)
-   ├── Risk Assessor              ├── Graph Queries (GSQL)
-   ├── Evidence Request Manager   └── Vector Store (GraphRAG)
-   ├── NBA Engine ←─→ Policy Engine
-   ├── Case Manager
-   └── Memory Retrieval
+```text
+FraudLens Agent (Autonomous Orchestrator)
+    │
+    ├────────► TigerGraph MCP Client (tigergraph-mcp v1.0.3)
+    │              │
+    │              ▼
+    │         TigerGraph Cloud (Live Graph Evidence & GSQL)
+    │
+    ├────────► GraphRAG Hybrid Retrieval
+    │              ├── TigerGraph Case Memory (5,565 vertices)
+    │              └── Semantic Vector Store (TF-IDF Cosine Similarity)
+    │
+    ├────────► LLM Reasoning & Synthesis Layer
+    │
+    ├────────► Deterministic RiskAssessor & PolicyEngine (R1–R10)
+    │
+    ├────────► Next-Best Action (NBA) Engine
+    │
+    ├────────► Human-in-the-Loop Approval Workflow (L1/L2)
+    │
+    └────────► TigerGraph Writeback (Read-After-Write Verified)
 ```
 
 ---

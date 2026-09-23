@@ -28,6 +28,9 @@ for case_file in cases:
                 ev["entity_ids"] = [card, cust] # CARD -> CUSTOMER
             elif ref == "get_device_neighbors":
                 ev["entity_ids"] = [txn, "D_55443322"] # TXN -> DEVICE
+            
+
+
                 
     elif c_id == "HHG-002":
         # customer/account/card/device graph

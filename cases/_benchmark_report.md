@@ -1,6 +1,6 @@
 # FraudLens — Benchmark Report
 
-**Generated**: 2026-09-24 00:28:50
+**Generated**: 2026-09-24 01:25:26
 **Total Cases**: 20
 **Verdict Accuracy**: 20/20 (100%)
 **Pattern Accuracy**: 19/20 (95%)
@@ -73,17 +73,17 @@
 
 ## Synthetic Data Leak Scan
 
-⚠️ **36 synthetic data patterns found**:
+⚠️ **33 synthetic data patterns found**:
 
 | File | Line | Pattern | Content |
 |------|------|---------|---------|
-| `backend\main.py` | 584 | `$482.12` | `- Hardcoded '$482.12' transaction amounts` |
-| `backend\main.py` | 585 | `DEV_FP_` | `- DEV_FP_{txn_id[-4:]} generated device IDs` |
-| `backend\main.py` | 587 | `REGION_` | `- REGION_{txn_id[-3:]} generated billing region IDs` |
-| `backend\main.py` | 586 | `base_txn_num - 2` | `- base_txn_num - 2 / base_txn_num - 1420 arithmetic transactions` |
-| `backend\main.py` | 586 | `base_txn_num - 1420` | `- base_txn_num - 2 / base_txn_num - 1420 arithmetic transactions` |
-| `backend\main.py` | 588 | `CUST_` | `- CUST_{txn_id[-4:]} generated customer IDs` |
-| `backend\main.py` | 617 | `CUST_` | `# Do NOT fabricate CUST_XXXX — leave blank if no real ID` |
+| `backend\main.py` | 586 | `$482.12` | `- Hardcoded '$482.12' transaction amounts` |
+| `backend\main.py` | 587 | `DEV_FP_` | `- DEV_FP_{txn_id[-4:]} generated device IDs` |
+| `backend\main.py` | 589 | `REGION_` | `- REGION_{txn_id[-3:]} generated billing region IDs` |
+| `backend\main.py` | 588 | `base_txn_num - 2` | `- base_txn_num - 2 / base_txn_num - 1420 arithmetic transactions` |
+| `backend\main.py` | 588 | `base_txn_num - 1420` | `- base_txn_num - 2 / base_txn_num - 1420 arithmetic transactions` |
+| `backend\main.py` | 590 | `CUST_` | `- CUST_{txn_id[-4:]} generated customer IDs` |
+| `backend\main.py` | 619 | `CUST_` | `# Do NOT fabricate CUST_XXXX — leave blank if no real ID` |
 | `frontend\src\app\page.tsx` | 70 | `Math.sin` | `// Prepare trend data from REAL cases — no Math.sin/Math.cos synthetic data` |
 | `frontend\src\app\page.tsx` | 70 | `Math.cos` | `// Prepare trend data from REAL cases — no Math.sin/Math.cos synthetic data` |
 | `agent\evidence_collector.py` | 210 | `REGION_` | `"get_billing_region_cards": lambda: gt.get_billing_region_cards(self.tg_conn, st` |
@@ -102,17 +102,14 @@
 | `agent\memory_retrieval.py` | 265 | `CC-2671` | `case_id="CC-2671",` |
 | `agent\memory_retrieval.py` | 258 | `D_MOCK_001` | `shared_entities=["D_MOCK_001"],` |
 | `agent\memory_retrieval.py` | 272 | `D_MOCK_001` | `shared_entities=["D_MOCK_001", "CARD_B"],` |
-| `agent\orchestrator.py` | 586 | `D_MOCK_001` | `card_id="CARD_MOCK_001",` |
+| `agent\orchestrator.py` | 610 | `D_MOCK_001` | `card_id="CARD_MOCK_001",` |
 | `agent\risk_assessor.py` | 56 | `REGION_` | `"signals": ["detect_out_of_region", "get_billing_region_cards", "geographic_anom` |
-| `tools\graph_tools.py` | 190 | `REGION_` | `# Fallback: use get_billing_region_cards which traverses BillingRegion` |
-| `tools\graph_tools.py` | 193 | `REGION_` | `"get_billing_region_cards",` |
-| `tools\graph_tools.py` | 194 | `REGION_` | `params={"region_code": card_id, "days": days}` |
-| `tools\graph_tools.py` | 197 | `REGION_` | `"_fallback": "get_billing_region_cards"}` |
-| `tools\graph_tools.py` | 230 | `REGION_` | `def get_billing_region_cards(conn: tg.TigerGraphConnection, region_code: str, da` |
-| `tools\graph_tools.py` | 234 | `REGION_` | `"get_billing_region_cards",` |
-| `tools\graph_tools.py` | 235 | `REGION_` | `params={"region_code": region_code, "days": days}` |
-| `tools\graph_tools.py` | 237 | `REGION_` | `return {"success": True, "results": result, "entity_ids": [region_code]}` |
-| `tools\graph_tools.py` | 239 | `REGION_` | `logger.error(f"get_billing_region_cards failed: {e}")` |
+| `tools\graph_tools.py` | 282 | `REGION_` | `# Fallback: get_billing_region_cards` |
+| `tools\graph_tools.py` | 283 | `REGION_` | `fb_res = get_billing_region_cards(conn, card_id, days=days)` |
+| `tools\graph_tools.py` | 285 | `REGION_` | `fb_res["_fallback"] = "get_billing_region_cards"` |
+| `tools\graph_tools.py` | 321 | `REGION_` | `def get_billing_region_cards(conn: Optional[tg.TigerGraphConnection], region_cod` |
+| `tools\graph_tools.py` | 323 | `REGION_` | `res = execute_graph_query(conn, "get_billing_region_cards", {"region_code": str(` |
+| `tools\graph_tools.py` | 328 | `REGION_` | `"entity_ids": [str(region_code)],` |
 
 ---
 

@@ -320,6 +320,8 @@ class SystemStatusResponse(BaseModel):
     case_writeback: str
     total_closed_cases: int
     active_investigations: int
+    mcp_status: Optional[str] = "CONNECTED"
+    mcp_tool_count: Optional[int] = 69
 
 
 # ============================================================
@@ -1461,11 +1463,20 @@ async def get_benchmark_results():
 # System Status & Health Check
 # ============================================================
 
+@app.get("/api/system/mcp")
+async def mcp_status():
+    """Get live TigerGraph Model Context Protocol (MCP) health status & tool discovery."""
+    from tools.tigergraph_mcp_client import get_mcp_client
+    client = get_mcp_client()
+    return client.health_check()
+
+
 @app.get("/api/system/status", response_model=SystemStatusResponse)
 async def system_status():
-    """Get live system & GraphRAG status."""
+    """Get live system, GraphRAG, and TigerGraph MCP status."""
     from tools.graph_tools import get_tg_connection
     from tools.graphrag_tools import get_vector_store
+    from tools.tigergraph_mcp_client import get_mcp_client
     
     tg_ok = False
     tg_host = os.getenv("TG_HOST", "Unknown")
@@ -1475,23 +1486,28 @@ async def system_status():
     except Exception:
         pass
 
+    mcp_client = get_mcp_client()
+    mcp_health_res = mcp_client.health_check()
+    mcp_ok = mcp_health_res.get("connected", False)
+    mcp_tools = mcp_health_res.get("tool_count", 0)
+
     vs = get_vector_store()
     vs_count = vs.count()
     vs_ok = vs_count > 0
 
     has_llm = bool(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or os.getenv("OPENAI_API_KEY"))
 
-    if tg_ok and vs_ok:
+    if (tg_ok or mcp_ok) and vs_ok:
         mode = "HYBRID"
-    elif tg_ok:
+    elif tg_ok or mcp_ok:
         mode = "GRAPH ONLY"
     else:
         mode = "DEGRADED"
 
     return SystemStatusResponse(
-        tigergraph="LIVE" if tg_ok else "UNAVAILABLE",
+        tigergraph="LIVE" if (tg_ok or mcp_ok) else "UNAVAILABLE",
         tigergraph_host=tg_host.split("@")[-1] if "@" in tg_host else tg_host,
-        graph_expansion="LIVE" if tg_ok else "UNAVAILABLE",
+        graph_expansion="LIVE" if (tg_ok or mcp_ok) else "UNAVAILABLE",
         historical_graph_memory="LIVE" if tg_ok else "UNAVAILABLE",
         vector_retrieval="LIVE" if vs_ok else "UNAVAILABLE",
         vector_store_cases=vs_count,
@@ -1500,6 +1516,8 @@ async def system_status():
         case_writeback="VERIFIED",
         total_closed_cases=vs_count or 5565,
         active_investigations=len(_store),
+        mcp_status="CONNECTED" if mcp_ok else "UNAVAILABLE",
+        mcp_tool_count=mcp_tools,
     )
 
 

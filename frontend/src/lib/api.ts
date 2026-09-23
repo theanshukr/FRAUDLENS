@@ -149,6 +149,11 @@ export async function getGraph(caseId: string): Promise<any> {
   return fetchApi(`/investigations/${caseId}/graph`);
 }
 
+export async function expandGraph(caseId: string, entityId: string, entityType: string = "Transaction"): Promise<any> {
+  const params = new URLSearchParams({ entity_id: entityId, entity_type: entityType });
+  return fetchApi(`/investigations/${caseId}/graph/expand?${params.toString()}`);
+}
+
 export async function getRecommendation(caseId: string): Promise<any> {
   return fetchApi(`/investigations/${caseId}/recommendation`);
 }
