@@ -69,7 +69,9 @@ export interface CaseSummary {
   final_verdict: string | null;
   final_risk_level: string | null;
   fraud_probability: number | null;
+  final_fraud_probability?: number | null;
   pattern: string | null;
+  trigger_type?: string | null;
   created_at: string | null;
   txn_id: string | null;
 }

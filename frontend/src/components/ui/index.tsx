@@ -20,11 +20,12 @@ export function Badge({
   className 
 }: { 
   children: React.ReactNode; 
-  variant?: "default" | "success" | "warning" | "danger" | "primary";
+  variant?: "default" | "secondary" | "success" | "warning" | "danger" | "primary";
   className?: string;
 }) {
   const variants = {
     default: "bg-secondary text-secondary-foreground border-border",
+    secondary: "bg-secondary text-secondary-foreground border-border",
     success: "bg-success/10 text-success border-success/20",
     warning: "bg-warning/10 text-warning border-warning/20",
     danger: "bg-danger/10 text-danger border-danger/20",
