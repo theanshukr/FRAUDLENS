@@ -1,13 +1,13 @@
 {
-  "case_id": "HHG-CUSTOM-01",
-  "txn_id": "T_TEST_002",
+  "case_id": "HHG-36A71DAE",
+  "txn_id": "T_LIST_001",
   "card_id": null,
   "customer_id": null,
   "trigger_type": "risk_score",
   "trigger_risk_score": null,
   "status": "RESOLVED",
-  "created_at": "2026-09-23T13:29:30.525636",
-  "updated_at": "2026-09-23T13:29:30.529106",
+  "created_at": "2026-09-23T13:29:32.411961",
+  "updated_at": "2026-09-23T13:29:32.411961",
   "initial_risk_level": "CRITICAL",
   "initial_fraud_probability": 1.0,
   "initial_confidence": 1.0,
@@ -26,7 +26,7 @@
         "T_MOCK_001"
       ],
       "confidence": 0.85,
-      "timestamp": "2026-09-23T13:29:30.526993",
+      "timestamp": "2026-09-23T13:29:32.411961",
       "raw_data": {
         "risk_score": 0.87,
         "amount": 542.0,
@@ -44,7 +44,7 @@
         "MOCK_DEVICE_001"
       ],
       "confidence": 0.85,
-      "timestamp": "2026-09-23T13:29:30.526993",
+      "timestamp": "2026-09-23T13:29:32.411961",
       "raw_data": {
         "shared_device_count": 3
       },
@@ -59,7 +59,7 @@
         "T_MOCK_000"
       ],
       "confidence": 0.92,
-      "timestamp": "2026-09-23T13:29:30.528028",
+      "timestamp": "2026-09-23T13:29:32.411961",
       "raw_data": {
         "card_testing_detected": true
       },
@@ -75,7 +75,7 @@
         "CC-2671"
       ],
       "confidence": 0.8,
-      "timestamp": "2026-09-23T13:29:30.528028",
+      "timestamp": "2026-09-23T13:29:32.411961",
       "raw_data": {
         "result_count": 2,
         "fraud_case_count": 2
@@ -230,55 +230,55 @@
     {
       "event_type": "CASE_CREATED",
       "description": "Investigation triggered by risk_score",
-      "timestamp": "2026-09-23T13:29:30.525636",
+      "timestamp": "2026-09-23T13:29:32.411961",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:TRIGGERED   INVESTIGATING",
       "description": "Building investigation plan",
-      "timestamp": "2026-09-23T13:29:30.525636",
+      "timestamp": "2026-09-23T13:29:32.411961",
       "metadata": {}
     },
     {
       "event_type": "INITIAL_ASSESSMENT",
       "description": "Initial risk: CRITICAL (100% probability)",
-      "timestamp": "2026-09-23T13:29:30.528028",
+      "timestamp": "2026-09-23T13:29:32.411961",
       "metadata": {}
     },
     {
       "event_type": "FINAL_ASSESSMENT",
       "description": "Final risk: CRITICAL (100% probability)",
-      "timestamp": "2026-09-23T13:29:30.528028",
+      "timestamp": "2026-09-23T13:29:32.411961",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:INVESTIGATING   ACTION_RECOMMENDED",
       "description": "Generating Next-Best-Action",
-      "timestamp": "2026-09-23T13:29:30.528028",
+      "timestamp": "2026-09-23T13:29:32.411961",
       "metadata": {}
     },
     {
       "event_type": "NBA_INITIAL",
       "description": "NBA generated: ['BLOCK_CARD', 'BLOCK_TRANSACTION', 'MONITOR_ACCOUNT', 'CREATE_CASE', 'FLAG_FRAUD_RING', 'ESCALATE_CASE', 'WARN_CUSTOMER']",
-      "timestamp": "2026-09-23T13:29:30.529106",
+      "timestamp": "2026-09-23T13:29:32.411961",
       "metadata": {}
     },
     {
       "event_type": "NBA_FINAL",
       "description": "NBA generated: ['BLOCK_CARD', 'BLOCK_TRANSACTION', 'MONITOR_ACCOUNT', 'CREATE_CASE', 'FLAG_FRAUD_RING', 'ESCALATE_CASE', 'WARN_CUSTOMER']",
-      "timestamp": "2026-09-23T13:29:30.529106",
+      "timestamp": "2026-09-23T13:29:32.411961",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:ACTION_RECOMMENDED   AWAITING_APPROVAL",
       "description": "Awaiting L2 analyst approval",
-      "timestamp": "2026-09-23T13:29:30.529106",
+      "timestamp": "2026-09-23T13:29:32.411961",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:AWAITING_APPROVAL   RESOLVED",
       "description": "Case resolved: FRAUD",
-      "timestamp": "2026-09-23T13:29:30.529106",
+      "timestamp": "2026-09-23T13:29:32.411961",
       "metadata": {}
     }
   ],
@@ -323,9 +323,9 @@
     "pattern": "card_testing",
     "pattern_description": "",
     "affected_txn_ids": [
-      "T_TEST_002"
+      "T_LIST_001"
     ],
-    "first_suspicious_txn_id": "T_TEST_002",
+    "first_suspicious_txn_id": "T_LIST_001",
     "connected_card_ids": [],
     "connected_device_profiles": [],
     "exposure_usd": 542.0,
@@ -368,9 +368,9 @@
       "CC-0141",
       "CC-2671"
     ],
-    "summary": "Investigation for HHG-CUSTOM-01 concluded with verdict FRAUD (100% probability) under pattern card_testing.",
+    "summary": "Investigation for HHG-36A71DAE concluded with verdict FRAUD (100% probability) under pattern card_testing.",
     "written_to_graph": true,
-    "graph_case_id": "HHG-CUSTOM-01"
+    "graph_case_id": "HHG-36A71DAE"
   },
   "next_best_actions": {
     "initial": [

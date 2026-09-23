@@ -5,12 +5,12 @@
   "valid_json_outputs": 20,
   "fraud_verdicts": 19,
   "cleared_verdicts": 1,
-  "avg_latency_s": 5.16,
+  "avg_latency_s": 4.58,
   "results": [
     {
       "case_id": "HHG-001",
       "success": true,
-      "latency_s": 4.4,
+      "latency_s": 5.87,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.69,
@@ -21,7 +21,7 @@
     {
       "case_id": "HHG-002",
       "success": true,
-      "latency_s": 3.62,
+      "latency_s": 4.85,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.69,
@@ -32,7 +32,7 @@
     {
       "case_id": "HHG-003",
       "success": true,
-      "latency_s": 3.65,
+      "latency_s": 4.62,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.702,
@@ -43,7 +43,7 @@
     {
       "case_id": "HHG-004",
       "success": true,
-      "latency_s": 4.32,
+      "latency_s": 4.31,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.702,
@@ -54,7 +54,7 @@
     {
       "case_id": "HHG-005",
       "success": true,
-      "latency_s": 5.33,
+      "latency_s": 4.13,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.69,
@@ -65,7 +65,7 @@
     {
       "case_id": "HHG-006",
       "success": true,
-      "latency_s": 5.43,
+      "latency_s": 3.93,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.702,
@@ -76,7 +76,7 @@
     {
       "case_id": "HHG-007",
       "success": true,
-      "latency_s": 5.12,
+      "latency_s": 3.81,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.69,
@@ -87,7 +87,7 @@
     {
       "case_id": "HHG-008",
       "success": true,
-      "latency_s": 5.85,
+      "latency_s": 4.75,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.702,
@@ -98,7 +98,7 @@
     {
       "case_id": "HHG-009",
       "success": true,
-      "latency_s": 5.02,
+      "latency_s": 3.83,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.702,
@@ -109,7 +109,7 @@
     {
       "case_id": "HHG-010",
       "success": true,
-      "latency_s": 4.8,
+      "latency_s": 3.93,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.69,
@@ -120,7 +120,7 @@
     {
       "case_id": "HHG-011",
       "success": true,
-      "latency_s": 3.89,
+      "latency_s": 4.77,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.702,
@@ -131,7 +131,7 @@
     {
       "case_id": "HHG-012",
       "success": true,
-      "latency_s": 6.22,
+      "latency_s": 3.64,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.69,
@@ -142,7 +142,7 @@
     {
       "case_id": "HHG-013",
       "success": true,
-      "latency_s": 4.22,
+      "latency_s": 3.86,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.69,
@@ -153,7 +153,7 @@
     {
       "case_id": "HHG-014",
       "success": true,
-      "latency_s": 5.1,
+      "latency_s": 3.59,
       "events": 22,
       "final_verdict": "uncertain",
       "fraud_probability": 0.183,
@@ -164,7 +164,7 @@
     {
       "case_id": "HHG-015",
       "success": true,
-      "latency_s": 5.95,
+      "latency_s": 5.66,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.69,
@@ -175,7 +175,7 @@
     {
       "case_id": "HHG-016",
       "success": true,
-      "latency_s": 8.6,
+      "latency_s": 7.62,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.702,
@@ -186,7 +186,7 @@
     {
       "case_id": "HHG-017",
       "success": true,
-      "latency_s": 8.04,
+      "latency_s": 5.55,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.69,
@@ -197,7 +197,7 @@
     {
       "case_id": "HHG-018",
       "success": true,
-      "latency_s": 5.14,
+      "latency_s": 4.99,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.702,
@@ -208,7 +208,7 @@
     {
       "case_id": "HHG-019",
       "success": true,
-      "latency_s": 4.2,
+      "latency_s": 4.01,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.69,
@@ -219,7 +219,7 @@
     {
       "case_id": "HHG-020",
       "success": true,
-      "latency_s": 4.25,
+      "latency_s": 3.85,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.69,

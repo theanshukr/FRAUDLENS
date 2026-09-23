@@ -315,6 +315,17 @@ class CaseManager:
         case_verdict = case.final_verdict or ("fraud" if (case.final_fraud_probability or 0) >= 0.5 else "legitimate")
         case_status_val = "closed_fraud" if case_verdict == "fraud" else ("closed_legitimate" if case_verdict == "cleared" else case.status.value.lower())
         
+        # LLM Synthesis via Gemini
+        from agent.llm_client import gemini_client
+        evidence_claims = [item["claim"] for item in std_evidence if item.get("claim")]
+        case_summary = gemini_client.generate_investigation_summary(
+            case_id=case.case_id,
+            txn_id=case.txn_id or "",
+            fraud_probability=float(case.final_fraud_probability or 0.0),
+            pattern=case.pattern or "none",
+            evidence_items=evidence_claims,
+        )
+
         case_part = {
             "status": case_status_val,
             "verdict": "fraud" if case_verdict == "fraud" else ("legitimate" if case_verdict == "cleared" else "uncertain"),
@@ -328,7 +339,7 @@ class CaseManager:
             "exposure_usd": round(float(case.exposure_usd or 0.0), 2),
             "evidence": std_evidence,
             "similar_prior_cases": similar_ids,
-            "summary": f"Investigation for {case.case_id} concluded with verdict {case_verdict.upper()} ({round((case.final_fraud_probability or 0)*100)}% probability) under pattern {case.pattern or 'none'}.",
+            "summary": case_summary,
             "written_to_graph": True,
             "graph_case_id": case.case_id,
         }
@@ -336,10 +347,22 @@ class CaseManager:
         # Part 2: sar
         sar_data = case.sar or {}
         sar_file = bool(sar_data.get("file", False))
+        sar_narrative = sar_data.get("narrative", "")
+        if sar_file and not sar_narrative:
+            sar_narrative = gemini_client.generate_sar_narrative(
+                case_id=case.case_id,
+                customer_id=case.customer_id or "",
+                card_id=case.card_id or "",
+                txn_id=case.txn_id or "",
+                amount=float(case.exposure_usd or 0.0),
+                pattern=case.pattern or "suspicious activity",
+                reasoning=case_summary,
+            )
+
         sar_part = {
             "file": sar_file,
             "reason": sar_data.get("reason", "") or ("Mandatory filing under fraud policy" if sar_file else "Not required by policy threshold"),
-            "narrative": sar_data.get("narrative", "") if sar_file else "",
+            "narrative": sar_narrative if sar_file else "",
             "subjects": [s for s in [case.customer_id, case.card_id, case.txn_id] if s] if sar_file else [],
             "total_amount_usd": round(float(case.exposure_usd or 0.0), 2) if sar_file else 0.0,
             "activity_dates": [case.created_at.strftime("%Y-%m-%d"), case.updated_at.strftime("%Y-%m-%d")] if (sar_file and case.created_at and case.updated_at) else [],

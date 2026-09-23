@@ -6,8 +6,8 @@
   "trigger_type": "customer_report",
   "trigger_risk_score": NaN,
   "status": "RESOLVED",
-  "created_at": "2026-09-23T03:49:25.678548",
-  "updated_at": "2026-09-23T03:49:29.879600",
+  "created_at": "2026-09-23T14:29:33.057692",
+  "updated_at": "2026-09-23T14:29:36.590992",
   "initial_risk_level": "HIGH",
   "initial_fraud_probability": 0.697,
   "initial_confidence": 0.845,
@@ -26,7 +26,7 @@
         "3581141"
       ],
       "confidence": 0.4,
-      "timestamp": "2026-09-23T03:49:25.984263",
+      "timestamp": "2026-09-23T14:29:33.295855",
       "raw_data": {
         "@@results": []
       },
@@ -41,7 +41,7 @@
         "C08299-K1"
       ],
       "confidence": 0.55,
-      "timestamp": "2026-09-23T03:49:26.285324",
+      "timestamp": "2026-09-23T14:29:33.536686",
       "raw_data": {
         "transaction_count": 1,
         "micro_txn_count": 1
@@ -55,7 +55,7 @@
       "ref": "get_device_neighbors",
       "entity_ids": [],
       "confidence": 0.55,
-      "timestamp": "2026-09-23T03:49:26.522906",
+      "timestamp": "2026-09-23T14:29:33.770256",
       "raw_data": {
         "shared_device_count": 0
       },
@@ -70,7 +70,7 @@
         "C08299-K1"
       ],
       "confidence": 0.6,
-      "timestamp": "2026-09-23T03:49:26.804994",
+      "timestamp": "2026-09-23T14:29:34.009520",
       "raw_data": {
         "ring_size": 1,
         "connected_card_ids": []
@@ -86,7 +86,7 @@
         "C08299-K1"
       ],
       "confidence": 0.78,
-      "timestamp": "2026-09-23T03:49:27.108704",
+      "timestamp": "2026-09-23T14:29:34.234490",
       "raw_data": {
         "is_new_device": true
       },
@@ -99,7 +99,7 @@
       "ref": "search_similar_cases",
       "entity_ids": [],
       "confidence": 0.6,
-      "timestamp": "2026-09-23T03:49:27.352954",
+      "timestamp": "2026-09-23T14:29:34.480949",
       "raw_data": {
         "result_count": 1,
         "fraud_case_count": 0
@@ -113,7 +113,7 @@
       "ref": "evidence_request:REQ-001",
       "entity_ids": [],
       "confidence": 0.9,
-      "timestamp": "2026-09-23T03:49:27.594100",
+      "timestamp": "2026-09-23T14:29:34.740017",
       "raw_data": {
         "request_id": "REQ-001",
         "scenario": "deny"
@@ -129,7 +129,7 @@
         "3581141"
       ],
       "confidence": 0.4,
-      "timestamp": "2026-09-23T03:49:27.827004",
+      "timestamp": "2026-09-23T14:29:35.020222",
       "raw_data": {
         "@@results": []
       },
@@ -144,7 +144,7 @@
         "C08299-K1"
       ],
       "confidence": 0.55,
-      "timestamp": "2026-09-23T03:49:28.065179",
+      "timestamp": "2026-09-23T14:29:35.314418",
       "raw_data": {
         "transaction_count": 1,
         "micro_txn_count": 1
@@ -158,7 +158,7 @@
       "ref": "get_device_neighbors",
       "entity_ids": [],
       "confidence": 0.55,
-      "timestamp": "2026-09-23T03:49:28.809078",
+      "timestamp": "2026-09-23T14:29:35.603369",
       "raw_data": {
         "shared_device_count": 0
       },
@@ -173,7 +173,7 @@
         "C08299-K1"
       ],
       "confidence": 0.6,
-      "timestamp": "2026-09-23T03:49:29.038726",
+      "timestamp": "2026-09-23T14:29:35.849451",
       "raw_data": {
         "ring_size": 1,
         "connected_card_ids": []
@@ -189,7 +189,7 @@
         "C08299-K1"
       ],
       "confidence": 0.78,
-      "timestamp": "2026-09-23T03:49:29.277636",
+      "timestamp": "2026-09-23T14:29:36.104571",
       "raw_data": {
         "is_new_device": true
       },
@@ -202,7 +202,7 @@
       "ref": "search_similar_cases",
       "entity_ids": [],
       "confidence": 0.6,
-      "timestamp": "2026-09-23T03:49:29.570486",
+      "timestamp": "2026-09-23T14:29:36.338591",
       "raw_data": {
         "result_count": 1,
         "fraud_case_count": 0
@@ -303,73 +303,73 @@
     {
       "event_type": "CASE_CREATED",
       "description": "Investigation triggered by customer_report",
-      "timestamp": "2026-09-23T03:49:25.678548",
+      "timestamp": "2026-09-23T14:29:33.057692",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:TRIGGERED   INVESTIGATING",
       "description": "Building investigation plan",
-      "timestamp": "2026-09-23T03:49:25.679110",
+      "timestamp": "2026-09-23T14:29:33.057692",
       "metadata": {}
     },
     {
       "event_type": "INITIAL_ASSESSMENT",
       "description": "Initial risk: HIGH (70% probability)",
-      "timestamp": "2026-09-23T03:49:27.593682",
+      "timestamp": "2026-09-23T14:29:34.739463",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:INVESTIGATING   AWAITING_EVIDENCE",
       "description": "Requesting additional evidence",
-      "timestamp": "2026-09-23T03:49:27.594100",
+      "timestamp": "2026-09-23T14:29:34.739463",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:AWAITING_EVIDENCE   REASSESSING",
       "description": "New evidence received \u2014 reassessing",
-      "timestamp": "2026-09-23T03:49:27.594100",
+      "timestamp": "2026-09-23T14:29:34.739463",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:REASSESSING   AWAITING_EVIDENCE",
       "description": "Requesting additional evidence",
-      "timestamp": "2026-09-23T03:49:29.877929",
+      "timestamp": "2026-09-23T14:29:36.589002",
       "metadata": {}
     },
     {
       "event_type": "FINAL_ASSESSMENT",
       "description": "Final risk: HIGH (70% probability)",
-      "timestamp": "2026-09-23T03:49:29.877929",
+      "timestamp": "2026-09-23T14:29:36.589002",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:AWAITING_EVIDENCE   ACTION_RECOMMENDED",
       "description": "Generating Next-Best-Action",
-      "timestamp": "2026-09-23T03:49:29.877929",
+      "timestamp": "2026-09-23T14:29:36.589002",
       "metadata": {}
     },
     {
       "event_type": "NBA_INITIAL",
       "description": "NBA generated: ['MONITOR_ACCOUNT', 'CREATE_CASE', 'BLOCK_CARD', 'WARN_CUSTOMER']",
-      "timestamp": "2026-09-23T03:49:29.879044",
+      "timestamp": "2026-09-23T14:29:36.590482",
       "metadata": {}
     },
     {
       "event_type": "NBA_FINAL",
       "description": "NBA generated: ['MONITOR_ACCOUNT', 'CREATE_CASE', 'BLOCK_CARD', 'WARN_CUSTOMER']",
-      "timestamp": "2026-09-23T03:49:29.879044",
+      "timestamp": "2026-09-23T14:29:36.590482",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:ACTION_RECOMMENDED   AWAITING_APPROVAL",
       "description": "Awaiting L1 analyst approval",
-      "timestamp": "2026-09-23T03:49:29.879600",
+      "timestamp": "2026-09-23T14:29:36.590482",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:AWAITING_APPROVAL   RESOLVED",
       "description": "Case resolved: FRAUD",
-      "timestamp": "2026-09-23T03:49:29.879600",
+      "timestamp": "2026-09-23T14:29:36.590992",
       "metadata": {}
     }
   ],
@@ -562,5 +562,5 @@
   ],
   "stop_reason": "Defensible decision reached with conclusive graph evidence",
   "tokens": 0,
-  "latency_s": 4.2
+  "latency_s": 3.53
 }

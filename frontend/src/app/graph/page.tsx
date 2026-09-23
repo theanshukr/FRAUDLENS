@@ -4,32 +4,28 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { getCases, getGraph, CaseSummary } from "@/lib/api";
 import { Card, Badge, cn } from "@/components/ui";
 import { 
   Search, 
   Network, 
-  Maximize, 
-  ZoomIn, 
-  ZoomOut, 
   AlertCircle, 
   Smartphone, 
   Activity, 
   User, 
   CreditCard, 
   Box, 
-  Info,
-  Share2,
-  Sparkles,
-  Layers,
-  CheckCircle2,
-  RefreshCw
+  Info, 
+  MapPin,
+  Mail,
+  Share2, 
+  Sparkles, 
+  RefreshCw 
 } from "lucide-react";
 import ReactFlow, { 
   Background, 
   Controls, 
-  MiniMap, 
   useNodesState, 
   useEdgesState,
   MarkerType,
@@ -44,49 +40,60 @@ import dagre from "dagre";
 
 // --- Dagre Layout ---
 const getLayoutedElements = (nodes: any[], edges: any[], direction = 'TB') => {
+  if (!nodes || nodes.length === 0) {
+    return { nodes: [], edges: [] };
+  }
+
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
-  
-  dagreGraph.setGraph({ rankdir: direction, nodesep: 60, ranksep: 80 });
+  dagreGraph.setGraph({ rankdir: direction, nodesep: 100, ranksep: 120 });
+
+  const nodeMap = new Set(nodes.map((n) => n.id));
 
   nodes.forEach((node) => {
     dagreGraph.setNode(node.id, { width: 230, height: 90 });
   });
 
-  edges.forEach((edge) => {
+  const validEdges = edges.filter((edge) => nodeMap.has(edge.source) && nodeMap.has(edge.target));
+
+  validEdges.forEach((edge) => {
     dagreGraph.setEdge(edge.source, edge.target);
   });
 
-  dagre.layout(dagreGraph);
+  try {
+    dagre.layout(dagreGraph);
+  } catch (err) {
+    console.warn("Dagre layout calculation warning:", err);
+  }
 
-  const layoutedNodes = nodes.map((node) => {
-    const nodeWithPosition = dagreGraph.node(node.id) || { x: Math.random() * 400, y: Math.random() * 400 };
+  const layoutedNodes = nodes.map((node, idx) => {
+    const nodeWithPosition = dagreGraph.node(node.id);
+    const x = nodeWithPosition ? nodeWithPosition.x - 230 / 2 : (idx % 3) * 260 + 50;
+    const y = nodeWithPosition ? nodeWithPosition.y - 90 / 2 : Math.floor(idx / 3) * 140 + 50;
+
     return {
       ...node,
       targetPosition: direction === 'TB' ? Position.Top : Position.Left,
       sourcePosition: direction === 'TB' ? Position.Bottom : Position.Right,
-      position: {
-        x: nodeWithPosition.x - 230 / 2,
-        y: nodeWithPosition.y - 90 / 2,
-      },
+      position: { x, y },
     };
   });
 
-  return { nodes: layoutedNodes, edges };
+  return { nodes: layoutedNodes, edges: validEdges };
 };
 
-// --- Custom Nodes ---
-
-const EntityNode = ({ data, type, selected }: any) => {
+// --- Custom Node ---
+const EntityNode = ({ data, selected }: any) => {
   const Icon = data.icon || Network;
   return (
     <div className={cn(
-      "px-4 py-3 shadow-md rounded-xl border bg-surface flex flex-col gap-2 min-w-[210px] transition-all backdrop-blur-sm",
+      "px-4 py-3 shadow-md rounded-xl border bg-surface flex flex-col gap-2 min-w-[210px] transition-all backdrop-blur-sm cursor-pointer",
       data.suspicious 
         ? "border-danger bg-danger/5 shadow-danger/10 ring-1 ring-danger/30" 
         : "border-border hover:border-primary/50 shadow-black/5",
       selected ? "ring-2 ring-primary ring-offset-2 ring-offset-background scale-[1.02]" : ""
     )}>
+      <Handle type="target" position={Position.Top} className="!w-2 !h-2 !bg-primary/50 border-0" />
       <div className="flex items-center gap-3">
         <div className={cn(
           "p-2.5 rounded-lg shrink-0", 
@@ -106,9 +113,7 @@ const EntityNode = ({ data, type, selected }: any) => {
           </div>
         </div>
       </div>
-      
-      <Handle type="target" position={Position.Top} className="opacity-0 w-2 h-2" />
-      <Handle type="source" position={Position.Bottom} className="opacity-0 w-2 h-2" />
+      <Handle type="source" position={Position.Bottom} className="!w-2 !h-2 !bg-primary/50 border-0" />
     </div>
   );
 };
@@ -118,9 +123,7 @@ const nodeTypes = {
 };
 
 // --- Graph Canvas Inner Component ---
-
 const GraphCanvas = ({ 
-  selectedCase, 
   nodesData, 
   edgesData, 
   suspiciousNodes, 
@@ -128,7 +131,6 @@ const GraphCanvas = ({
   onNodeClick,
   onEdgeClick
 }: { 
-  selectedCase: string, 
   nodesData: any[], 
   edgesData: any[],
   suspiciousNodes: string[],
@@ -154,6 +156,8 @@ const GraphCanvas = ({
       else if (t.includes('customer') || t.includes('user') || t.includes('identity')) icon = User;
       else if (t.includes('device') || t.includes('ip')) icon = Smartphone;
       else if (t.includes('transaction') || t.includes('txn')) icon = Activity;
+      else if (t.includes('billing') || t.includes('region')) icon = MapPin;
+      else if (t.includes('email') || t.includes('domain')) icon = Mail;
 
       return {
         id: n.id,
@@ -162,31 +166,46 @@ const GraphCanvas = ({
           ...n,
           label: n.label || n.id, 
           type: n.type, 
-          suspicious: n.suspicious || suspiciousNodes?.includes(n.id),
+          suspicious: Boolean(n.suspicious || suspiciousNodes?.includes(n.id)),
           icon
         },
         position: { x: 0, y: 0 }
       };
     });
     
-    const mappedEdges = edgesData.map((e: any) => {
-      const isSuspicious = e.suspicious || suspiciousEdges?.includes(`${e.source}-${e.target}`);
+    // Strict edge deduplication on frontend to physically prevent duplicate parallel edges
+    const edgePairMap = new Map<string, any>();
+    (edgesData || []).forEach((e: any) => {
+      if (!e.source || !e.target || e.source === e.target) return;
+      const pairKey = [e.source, e.target].sort().join("---");
+      if (!edgePairMap.has(pairKey)) {
+        edgePairMap.set(pairKey, { ...e });
+      }
+    });
+
+    const uniqueEdges = Array.from(edgePairMap.values());
+
+    const mappedEdges = uniqueEdges.map((e: any, idx: number) => {
+      const isSuspicious = Boolean(e.suspicious || suspiciousEdges?.includes(`${e.source}-${e.target}`) || suspiciousEdges?.includes(`${e.target}-${e.source}`));
       return {
-        id: `${e.source}-${e.target}-${e.type}`,
+        id: `edge-${e.source}-${e.target}-${idx}`,
         source: e.source,
         target: e.target,
+        type: 'smoothstep',
         data: { ...e },
         label: e.label || e.type,
         animated: isSuspicious,
         style: { 
-          stroke: isSuspicious ? '#ef4444' : '#64748b',
+          stroke: isSuspicious ? '#ef4444' : '#94a3b8',
           strokeWidth: isSuspicious ? 2.5 : 1.5
         },
-        labelStyle: { fill: '#64748b', fontWeight: 600, fontSize: 10 },
-        labelBgStyle: { fill: 'hsl(var(--surface))', fillOpacity: 0.85, rx: 4, ry: 4 },
+        labelStyle: { fill: isSuspicious ? '#dc2626' : '#475569', fontWeight: 600, fontSize: 10 },
+        labelBgStyle: { fill: '#ffffff', fillOpacity: 0.95, rx: 6, ry: 6 },
+        labelBgPadding: [6, 3] as [number, number],
+        labelBgBorderRadius: 6,
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          color: isSuspicious ? '#ef4444' : '#64748b',
+          color: isSuspicious ? '#ef4444' : '#94a3b8',
         }
       };
     });
@@ -195,51 +214,59 @@ const GraphCanvas = ({
     setNodes(layouted.nodes);
     setEdges(layouted.edges);
     
-    setTimeout(() => {
-      fitView({ padding: 0.2, duration: 800 });
-    }, 100);
+    const timer = setTimeout(() => {
+      try {
+        fitView({ padding: 0.25, duration: 600 });
+      } catch (e) {
+        console.warn("fitView error", e);
+      }
+    }, 150);
+
+    return () => clearTimeout(timer);
   }, [nodesData, edgesData, suspiciousNodes, suspiciousEdges, setNodes, setEdges, fitView]);
 
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      onNodeClick={(_, node) => onNodeClick(node.data)}
-      onEdgeClick={(_, edge) => onEdgeClick(edge.data)}
-      onPaneClick={() => { onNodeClick(null); onEdgeClick(null); }}
-      nodeTypes={nodeTypes}
-      minZoom={0.2}
-      maxZoom={3}
-      className="w-full h-full"
-    >
-      <Background color="#94a3b8" gap={20} size={1} />
-      <Controls className="bg-surface border border-border shadow-lg rounded-xl overflow-hidden" />
-      
-      <Panel position="bottom-left" className="bg-surface/90 backdrop-blur-md border border-border p-3.5 rounded-xl shadow-lg mb-4 ml-4 z-10 space-y-2.5">
-        <h4 className="text-[11px] font-bold uppercase tracking-wider text-secondary-foreground">Graph Legend</h4>
-        <div className="space-y-1.5 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-sm bg-primary/20 border border-primary/50"></div>
-            <span>Legitimate Entity</span>
+    <div className="w-full h-full relative">
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onNodeClick={(_, node) => onNodeClick(node.data)}
+        onEdgeClick={(_, edge) => onEdgeClick(edge.data)}
+        onPaneClick={() => { onNodeClick(null); onEdgeClick(null); }}
+        nodeTypes={nodeTypes}
+        minZoom={0.1}
+        maxZoom={3}
+        fitView
+        className="w-full h-full"
+      >
+        <Background color="#94a3b8" gap={20} size={1} />
+        <Controls className="bg-surface border border-border shadow-lg rounded-xl overflow-hidden" />
+        
+        <Panel position="bottom-left" className="bg-surface/90 backdrop-blur-md border border-border p-3.5 rounded-xl shadow-lg mb-4 ml-4 z-10 space-y-2.5">
+          <h4 className="text-[11px] font-bold uppercase tracking-wider text-secondary-foreground">Graph Legend</h4>
+          <div className="space-y-1.5 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm bg-primary/20 border border-primary/50"></div>
+              <span>Legitimate Entity</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm bg-danger/20 border border-danger"></div>
+              <span className="font-semibold text-danger">Suspicious Entity</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-0.5 bg-danger"></div>
+              <span className="text-[11px] text-danger font-medium">Attack Path / Fraud Link</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-sm bg-danger/20 border border-danger"></div>
-            <span className="font-semibold text-danger">Suspicious Entity</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-0.5 bg-danger"></div>
-            <span className="text-[11px] text-danger font-medium">Attack Path / Fraud Ring</span>
-          </div>
-        </div>
-      </Panel>
-    </ReactFlow>
+        </Panel>
+      </ReactFlow>
+    </div>
   );
 };
 
 // --- Main Page Component ---
-
 export default function GraphPage() {
   const [cases, setCases] = useState<CaseSummary[]>([]);
   const [selectedCase, setSelectedCase] = useState<string | null>(null);
@@ -256,40 +283,46 @@ export default function GraphPage() {
   const [selectedNodeData, setSelectedNodeData] = useState<any | null>(null);
   const [selectedEdgeData, setSelectedEdgeData] = useState<any | null>(null);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
+    setLoadingCases(true);
     getCases()
-      .then(res => {
+      .then((res) => {
         const cList = res.cases || [];
         setCases(cList);
         if (cList.length > 0 && !selectedCase) {
           setSelectedCase(cList[0].case_id);
         }
       })
+      .catch((err) => console.error("Failed to load cases list", err))
+      .finally(() => setLoadingCases(false));
   }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (!selectedCase) return;
-    
+  const loadCaseGraph = useCallback((caseId: string, force = false) => {
+    if (!caseId) return;
     setSelectedNodeData(null);
     setSelectedEdgeData(null);
-    
-    if (graphCache[selectedCase]) {
+
+    if (!force && graphCache[caseId]) {
       return;
     }
-    
+
     setLoadingGraph(true);
-    getGraph(selectedCase)
-      .then(res => {
-        setGraphCache(prev => ({
+    getGraph(caseId)
+      .then((res) => {
+        setGraphCache((prev) => ({
           ...prev,
-          [selectedCase]: res
+          [caseId]: res
         }));
       })
-      .catch(err => console.error("Failed to load graph", err))
+      .catch((err) => console.error("Failed to load graph", err))
       .finally(() => setLoadingGraph(false));
-  }, [selectedCase, graphCache]);
+  }, [graphCache]);
+
+  useEffect(() => {
+    if (selectedCase) {
+      loadCaseGraph(selectedCase);
+    }
+  }, [selectedCase]);
 
   // Expand 1-Hop Neighbors function
   const handleExpandNeighbors = () => {
@@ -300,7 +333,6 @@ export default function GraphPage() {
       const current = graphCache[selectedCase] || { nodes: [], edges: [], suspicious_nodes: [], suspicious_edges: [] };
       const baseId = selectedNodeData.id;
 
-      // Generate 2 connected neighbor entities based on selected type
       const newNode1 = {
         id: `D_FINGERPRINT_${baseId.slice(-4)}`,
         type: "DeviceProfile",
@@ -331,31 +363,35 @@ export default function GraphPage() {
         suspicious: true
       };
 
-      const existingNodeIds = new Set(current.nodes.map((n: any) => n.id));
-      const updatedNodes = [...current.nodes];
+      const existingNodeIds = new Set((current.nodes || []).map((n: any) => n.id));
+      const updatedNodes = [...(current.nodes || [])];
       if (!existingNodeIds.has(newNode1.id)) updatedNodes.push(newNode1);
       if (!existingNodeIds.has(newNode2.id)) updatedNodes.push(newNode2);
 
-      const updatedEdges = [...current.edges, newEdge1, newEdge2];
+      const updatedEdges = [...(current.edges || []), newEdge1, newEdge2];
 
-      setGraphCache(prev => ({
+      setGraphCache((prev) => ({
         ...prev,
         [selectedCase]: {
           ...current,
           nodes: updatedNodes,
           edges: updatedEdges,
-          suspicious_nodes: [...current.suspicious_nodes, newNode1.id, newNode2.id],
-          suspicious_edges: [...current.suspicious_edges, `${baseId}-${newNode1.id}`, `${newNode1.id}-${newNode2.id}`]
+          suspicious_nodes: [...(current.suspicious_nodes || []), newNode1.id, newNode2.id],
+          suspicious_edges: [...(current.suspicious_edges || []), `${baseId}-${newNode1.id}`, `${newNode1.id}-${newNode2.id}`]
         }
       }));
 
       setExpanding(false);
-    }, 500);
+    }, 400);
   };
 
-  const filteredCases = cases.filter(c => 
-    !search || c.case_id?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredCases = useMemo(() => {
+    return cases.filter((c) => 
+      !search || 
+      c.case_id?.toLowerCase().includes(search.toLowerCase()) ||
+      c.pattern?.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [cases, search]);
 
   const currentGraph = selectedCase ? graphCache[selectedCase] : null;
 
@@ -372,10 +408,10 @@ export default function GraphPage() {
   };
 
   return (
-    <div className="flex h-full w-full mx-auto overflow-hidden">
+    <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden bg-background">
       {/* Sidebar: Case Selector */}
       <div className="w-80 border-r border-border bg-surface/50 flex flex-col shrink-0 z-20 shadow-sm relative">
-        <div className="p-4 border-b border-border">
+        <div className="p-4 border-b border-border shrink-0">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xs font-bold text-secondary-foreground uppercase tracking-wider">
               Investigation Cases
@@ -388,7 +424,7 @@ export default function GraphPage() {
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary-foreground" />
             <input
               type="text"
-              placeholder="Search Case ID or txn..."
+              placeholder="Search Case ID or pattern..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
@@ -398,10 +434,12 @@ export default function GraphPage() {
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {loadingCases ? (
             <div className="p-4 space-y-2 animate-pulse">
-              {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-12 bg-secondary rounded-lg w-full"></div>)}
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="h-12 bg-secondary rounded-lg w-full"></div>
+              ))}
             </div>
           ) : filteredCases.length > 0 ? (
-            filteredCases.map(c => (
+            filteredCases.map((c) => (
               <button
                 key={c.case_id}
                 onClick={() => setSelectedCase(c.case_id)}
@@ -412,17 +450,17 @@ export default function GraphPage() {
                     : "hover:bg-secondary text-foreground"
                 )}
               >
-                <div>
-                  <span className="font-mono text-xs font-bold block">{c.case_id}</span>
+                <div className="overflow-hidden mr-2">
+                  <span className="font-mono text-xs font-bold block truncate">{c.case_id}</span>
                   <span className={cn(
-                    "text-[10px]",
+                    "text-[10px] block truncate",
                     selectedCase === c.case_id ? "text-primary-foreground/80" : "text-secondary-foreground"
                   )}>
-                    {c.trigger_type?.replace(/_/g, " ") || "Risk Trigger"}
+                    {c.pattern?.replace(/_/g, " ") || c.trigger_type?.replace(/_/g, " ") || "Risk Trigger"}
                   </span>
                 </div>
                 <span className={cn(
-                  "text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded",
+                  "text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded shrink-0",
                   selectedCase === c.case_id ? "bg-primary-foreground/20 text-primary-foreground" : 
                   c.final_risk_level === "HIGH" || c.final_risk_level === "CRITICAL" ? "bg-danger/10 text-danger" : 
                   "bg-surface text-secondary-foreground"
@@ -439,9 +477,10 @@ export default function GraphPage() {
 
       {/* Main: Graph Display */}
       <div className="flex-1 bg-background flex flex-col overflow-hidden relative">
-        <div className="absolute top-0 left-0 right-0 z-10 px-6 py-3.5 border-b border-border bg-surface/90 backdrop-blur-md shadow-sm pointer-events-auto flex justify-between items-center">
+        {/* Header Bar */}
+        <div className="h-16 px-6 border-b border-border bg-surface/90 backdrop-blur-md shadow-sm shrink-0 flex justify-between items-center z-10">
           <div>
-            <h1 className="text-lg font-bold tracking-tight flex items-center gap-2">
+            <h1 className="text-base font-bold tracking-tight flex items-center gap-2">
               <Network className="w-5 h-5 text-primary" />
               TigerGraph Intelligence Explorer
             </h1>
@@ -452,15 +491,28 @@ export default function GraphPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {selectedCase && currentGraph && (
-              <Badge variant="secondary" className="font-mono text-xs px-2.5 py-1">
-                {currentGraph.nodes?.length || 0} Nodes • {currentGraph.edges?.length || 0} Edges
-              </Badge>
+            {selectedCase && (
+              <>
+                {currentGraph && (
+                  <Badge variant="secondary" className="font-mono text-xs px-2.5 py-1">
+                    {currentGraph.nodes?.length || 0} Nodes • {currentGraph.edges?.length || 0} Edges
+                  </Badge>
+                )}
+                <button
+                  onClick={() => loadCaseGraph(selectedCase, true)}
+                  disabled={loadingGraph}
+                  className="p-2 text-secondary-foreground hover:bg-secondary rounded-lg transition-colors"
+                  title="Refresh Graph Data"
+                >
+                  <RefreshCw className={cn("w-4 h-4", loadingGraph && "animate-spin text-primary")} />
+                </button>
+              </>
             )}
           </div>
         </div>
 
-        <div className="flex-1 relative w-full h-full bg-slate-50 dark:bg-zinc-950 pt-16">
+        {/* Canvas Area */}
+        <div className="flex-1 relative w-full h-full bg-slate-50 dark:bg-zinc-950 overflow-hidden">
           {!selectedCase ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center max-w-md mx-auto z-20">
               <Network className="w-12 h-12 text-secondary-foreground mb-4 opacity-50" />
@@ -475,7 +527,6 @@ export default function GraphPage() {
           ) : (
             <ReactFlowProvider>
               <GraphCanvas 
-                selectedCase={selectedCase}
                 nodesData={currentGraph?.nodes || []}
                 edgesData={currentGraph?.edges || []}
                 suspiciousNodes={currentGraph?.suspicious_nodes || []}
@@ -489,7 +540,7 @@ export default function GraphPage() {
 
         {/* Details Panel Overlay & Multi-hop Expander */}
         {(selectedNodeData || selectedEdgeData) && (
-          <div className="absolute top-20 right-6 w-84 bg-surface/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl overflow-hidden z-30 flex flex-col max-h-[calc(100%-110px)] animate-in fade-in slide-in-from-right-4 duration-200">
+          <div className="absolute top-20 right-6 w-80 bg-surface/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl overflow-hidden z-30 flex flex-col max-h-[calc(100%-6rem)] animate-in fade-in slide-in-from-right-4 duration-200">
             <div className="p-4 border-b border-border flex justify-between items-center bg-secondary/40">
               <h3 className="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
                 <Info className="w-4 h-4 text-primary" />

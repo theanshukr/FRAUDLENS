@@ -1,13 +1,13 @@
 {
-  "case_id": "HHG-CUSTOM-01",
-  "txn_id": "T_TEST_002",
-  "card_id": null,
+  "case_id": "HHG-EB0D2886",
+  "txn_id": "T_TEST_001",
+  "card_id": "CARD_TEST_001",
   "customer_id": null,
   "trigger_type": "risk_score",
   "trigger_risk_score": null,
   "status": "RESOLVED",
-  "created_at": "2026-09-23T13:29:30.525636",
-  "updated_at": "2026-09-23T13:29:30.529106",
+  "created_at": "2026-09-23T13:29:28.779242",
+  "updated_at": "2026-09-23T13:29:28.792492",
   "initial_risk_level": "CRITICAL",
   "initial_fraud_probability": 1.0,
   "initial_confidence": 1.0,
@@ -26,7 +26,7 @@
         "T_MOCK_001"
       ],
       "confidence": 0.85,
-      "timestamp": "2026-09-23T13:29:30.526993",
+      "timestamp": "2026-09-23T13:29:28.779242",
       "raw_data": {
         "risk_score": 0.87,
         "amount": 542.0,
@@ -37,6 +37,22 @@
     },
     {
       "evidence_id": "EVD-0002",
+      "claim": "Card history shows 3 micro-transactions (< $5) followed by 1 large transaction(s) \u2014 classic card testing pattern.",
+      "source": "graph",
+      "ref": "get_card_history",
+      "entity_ids": [
+        "CARD_MOCK_001"
+      ],
+      "confidence": 0.85,
+      "timestamp": "2026-09-23T13:29:28.790126",
+      "raw_data": {
+        "transaction_count": 4,
+        "micro_txn_count": 3
+      },
+      "supports_fraud": true
+    },
+    {
+      "evidence_id": "EVD-0003",
       "claim": "Device profile is shared by 3 different cards \u2014 strong organized fraud ring signal (threshold: 3).",
       "source": "graph",
       "ref": "get_device_neighbors",
@@ -44,14 +60,36 @@
         "MOCK_DEVICE_001"
       ],
       "confidence": 0.85,
-      "timestamp": "2026-09-23T13:29:30.526993",
+      "timestamp": "2026-09-23T13:29:28.790126",
       "raw_data": {
         "shared_device_count": 3
       },
       "supports_fraud": true
     },
     {
-      "evidence_id": "EVD-0003",
+      "evidence_id": "EVD-0004",
+      "claim": "3 cards are connected through shared devices \u2014 potential coordinated fraud activity.",
+      "source": "graph",
+      "ref": "find_connected_cards",
+      "entity_ids": [
+        "CARD_B",
+        "CARD_C",
+        "CARD_B",
+        "CARD_C"
+      ],
+      "confidence": 0.75,
+      "timestamp": "2026-09-23T13:29:28.790126",
+      "raw_data": {
+        "ring_size": 3,
+        "connected_card_ids": [
+          "CARD_B",
+          "CARD_C"
+        ]
+      },
+      "supports_fraud": true
+    },
+    {
+      "evidence_id": "EVD-0005",
       "claim": "Card testing pattern DETECTED \u2014 micro-authorization burst followed by large transaction. This is a definitive fraud indicator (R5 trigger).",
       "source": "graph",
       "ref": "detect_card_testing",
@@ -59,14 +97,14 @@
         "T_MOCK_000"
       ],
       "confidence": 0.92,
-      "timestamp": "2026-09-23T13:29:30.528028",
+      "timestamp": "2026-09-23T13:29:28.790126",
       "raw_data": {
         "card_testing_detected": true
       },
       "supports_fraud": true
     },
     {
-      "evidence_id": "EVD-0004",
+      "evidence_id": "EVD-0006",
       "claim": "Historical memory: 2 similar closed cases resulted in fraud verdicts \u2014 pattern has precedent in case history.",
       "source": "document",
       "ref": "search_similar_cases",
@@ -75,7 +113,7 @@
         "CC-2671"
       ],
       "confidence": 0.8,
-      "timestamp": "2026-09-23T13:29:30.528028",
+      "timestamp": "2026-09-23T13:29:28.790126",
       "raw_data": {
         "result_count": 2,
         "fraud_case_count": 2
@@ -125,8 +163,8 @@
     {
       "action": "FLAG_FRAUD_RING",
       "route": "L2",
-      "reason": "3 cards share same device profile",
-      "policy_rule": "R7",
+      "reason": "Multiple connected accounts with fraud history",
+      "policy_rule": "R4",
       "priority": 5,
       "is_mandatory": true,
       "status": "pending"
@@ -134,8 +172,8 @@
     {
       "action": "ESCALATE_CASE",
       "route": "L1",
-      "reason": "3 cards share same device profile",
-      "policy_rule": "R7",
+      "reason": "Multiple connected accounts with fraud history",
+      "policy_rule": "R4",
       "priority": 6,
       "is_mandatory": true,
       "status": "pending"
@@ -146,6 +184,15 @@
       "reason": "No customer response with high fraud probability",
       "policy_rule": "R10",
       "priority": 7,
+      "is_mandatory": true,
+      "status": "pending"
+    },
+    {
+      "action": "FILE_REPORT",
+      "route": "L2",
+      "reason": "Suspicious Activity Report required by policy",
+      "policy_rule": "R6/R4",
+      "priority": 8,
       "is_mandatory": true,
       "status": "pending"
     }
@@ -190,8 +237,8 @@
     {
       "action": "FLAG_FRAUD_RING",
       "route": "L2",
-      "reason": "3 cards share same device profile",
-      "policy_rule": "R7",
+      "reason": "Multiple connected accounts with fraud history",
+      "policy_rule": "R4",
       "priority": 5,
       "is_mandatory": true,
       "status": "pending"
@@ -199,8 +246,8 @@
     {
       "action": "ESCALATE_CASE",
       "route": "L1",
-      "reason": "3 cards share same device profile",
-      "policy_rule": "R7",
+      "reason": "Multiple connected accounts with fraud history",
+      "policy_rule": "R4",
       "priority": 6,
       "is_mandatory": true,
       "status": "pending"
@@ -213,72 +260,87 @@
       "priority": 7,
       "is_mandatory": true,
       "status": "pending"
+    },
+    {
+      "action": "FILE_REPORT",
+      "route": "L2",
+      "reason": "Suspicious Activity Report required by policy",
+      "policy_rule": "R6/R4",
+      "priority": 8,
+      "is_mandatory": true,
+      "status": "pending"
     }
   ],
   "what_changed": null,
   "final_verdict": "fraud",
   "exposure_usd": 542.0,
   "sar": {
-    "file": false,
-    "reason": "Not required by policy threshold",
+    "file": true,
+    "reason": "High exposure fraud with connected ring",
     "narrative": "",
-    "subjects": [],
-    "total_amount_usd": 0.0,
-    "activity_dates": []
+    "subjects": [
+      "CARD_TEST_001",
+      "T_TEST_001"
+    ],
+    "total_amount_usd": 542.0,
+    "activity_dates": [
+      "2026-09-23",
+      "2026-09-23"
+    ]
   },
   "timeline": [
     {
       "event_type": "CASE_CREATED",
       "description": "Investigation triggered by risk_score",
-      "timestamp": "2026-09-23T13:29:30.525636",
+      "timestamp": "2026-09-23T13:29:28.779242",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:TRIGGERED   INVESTIGATING",
       "description": "Building investigation plan",
-      "timestamp": "2026-09-23T13:29:30.525636",
+      "timestamp": "2026-09-23T13:29:28.779242",
       "metadata": {}
     },
     {
       "event_type": "INITIAL_ASSESSMENT",
       "description": "Initial risk: CRITICAL (100% probability)",
-      "timestamp": "2026-09-23T13:29:30.528028",
+      "timestamp": "2026-09-23T13:29:28.790126",
       "metadata": {}
     },
     {
       "event_type": "FINAL_ASSESSMENT",
       "description": "Final risk: CRITICAL (100% probability)",
-      "timestamp": "2026-09-23T13:29:30.528028",
+      "timestamp": "2026-09-23T13:29:28.790126",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:INVESTIGATING   ACTION_RECOMMENDED",
       "description": "Generating Next-Best-Action",
-      "timestamp": "2026-09-23T13:29:30.528028",
+      "timestamp": "2026-09-23T13:29:28.790126",
       "metadata": {}
     },
     {
       "event_type": "NBA_INITIAL",
-      "description": "NBA generated: ['BLOCK_CARD', 'BLOCK_TRANSACTION', 'MONITOR_ACCOUNT', 'CREATE_CASE', 'FLAG_FRAUD_RING', 'ESCALATE_CASE', 'WARN_CUSTOMER']",
-      "timestamp": "2026-09-23T13:29:30.529106",
+      "description": "NBA generated: ['BLOCK_CARD', 'BLOCK_TRANSACTION', 'MONITOR_ACCOUNT', 'CREATE_CASE', 'FLAG_FRAUD_RING', 'ESCALATE_CASE', 'WARN_CUSTOMER', 'FILE_REPORT']",
+      "timestamp": "2026-09-23T13:29:28.792492",
       "metadata": {}
     },
     {
       "event_type": "NBA_FINAL",
-      "description": "NBA generated: ['BLOCK_CARD', 'BLOCK_TRANSACTION', 'MONITOR_ACCOUNT', 'CREATE_CASE', 'FLAG_FRAUD_RING', 'ESCALATE_CASE', 'WARN_CUSTOMER']",
-      "timestamp": "2026-09-23T13:29:30.529106",
+      "description": "NBA generated: ['BLOCK_CARD', 'BLOCK_TRANSACTION', 'MONITOR_ACCOUNT', 'CREATE_CASE', 'FLAG_FRAUD_RING', 'ESCALATE_CASE', 'WARN_CUSTOMER', 'FILE_REPORT']",
+      "timestamp": "2026-09-23T13:29:28.792492",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:ACTION_RECOMMENDED   AWAITING_APPROVAL",
       "description": "Awaiting L2 analyst approval",
-      "timestamp": "2026-09-23T13:29:30.529106",
+      "timestamp": "2026-09-23T13:29:28.792492",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:AWAITING_APPROVAL   RESOLVED",
       "description": "Case resolved: FRAUD",
-      "timestamp": "2026-09-23T13:29:30.529106",
+      "timestamp": "2026-09-23T13:29:28.792492",
       "metadata": {}
     }
   ],
@@ -323,10 +385,12 @@
     "pattern": "card_testing",
     "pattern_description": "",
     "affected_txn_ids": [
-      "T_TEST_002"
+      "T_TEST_001"
     ],
-    "first_suspicious_txn_id": "T_TEST_002",
-    "connected_card_ids": [],
+    "first_suspicious_txn_id": "T_TEST_001",
+    "connected_card_ids": [
+      "CARD_TEST_001"
+    ],
     "connected_device_profiles": [],
     "exposure_usd": 542.0,
     "evidence": [
@@ -339,11 +403,30 @@
         ]
       },
       {
+        "claim": "Card history shows 3 micro-transactions (< $5) followed by 1 large transaction(s) \u2014 classic card testing pattern.",
+        "source": "graph",
+        "ref": "get_card_history",
+        "entity_ids": [
+          "CARD_MOCK_001"
+        ]
+      },
+      {
         "claim": "Device profile is shared by 3 different cards \u2014 strong organized fraud ring signal (threshold: 3).",
         "source": "graph",
         "ref": "get_device_neighbors",
         "entity_ids": [
           "MOCK_DEVICE_001"
+        ]
+      },
+      {
+        "claim": "3 cards are connected through shared devices \u2014 potential coordinated fraud activity.",
+        "source": "graph",
+        "ref": "find_connected_cards",
+        "entity_ids": [
+          "CARD_B",
+          "CARD_C",
+          "CARD_B",
+          "CARD_C"
         ]
       },
       {
@@ -368,9 +451,9 @@
       "CC-0141",
       "CC-2671"
     ],
-    "summary": "Investigation for HHG-CUSTOM-01 concluded with verdict FRAUD (100% probability) under pattern card_testing.",
+    "summary": "Investigation for HHG-EB0D2886 concluded with verdict FRAUD (100% probability) under pattern card_testing.",
     "written_to_graph": true,
-    "graph_case_id": "HHG-CUSTOM-01"
+    "graph_case_id": "HHG-EB0D2886"
   },
   "next_best_actions": {
     "initial": [
@@ -397,17 +480,22 @@
       {
         "action": "FLAG_FRAUD_RING",
         "route": "L2",
-        "reason": "3 cards share same device profile"
+        "reason": "Multiple connected accounts with fraud history"
       },
       {
         "action": "ESCALATE_CASE",
         "route": "L1",
-        "reason": "3 cards share same device profile"
+        "reason": "Multiple connected accounts with fraud history"
       },
       {
         "action": "WARN_CUSTOMER",
         "route": "auto",
         "reason": "No customer response with high fraud probability"
+      },
+      {
+        "action": "FILE_REPORT",
+        "route": "L2",
+        "reason": "Suspicious Activity Report required by policy"
       }
     ],
     "final": [
@@ -434,17 +522,22 @@
       {
         "action": "FLAG_FRAUD_RING",
         "route": "L2",
-        "reason": "3 cards share same device profile"
+        "reason": "Multiple connected accounts with fraud history"
       },
       {
         "action": "ESCALATE_CASE",
         "route": "L1",
-        "reason": "3 cards share same device profile"
+        "reason": "Multiple connected accounts with fraud history"
       },
       {
         "action": "WARN_CUSTOMER",
         "route": "auto",
         "reason": "No customer response with high fraud probability"
+      },
+      {
+        "action": "FILE_REPORT",
+        "route": "L2",
+        "reason": "Suspicious Activity Report required by policy"
       }
     ],
     "what_changed": "nothing"
@@ -458,5 +551,5 @@
   ],
   "stop_reason": "Defensible decision reached with conclusive graph evidence",
   "tokens": 0,
-  "latency_s": 0.0
+  "latency_s": 0.01
 }

@@ -19,7 +19,9 @@ export class InvestigationStream {
       onEnd?: () => void;
     }
   ) {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+    const baseUrl = typeof window !== "undefined"
+      ? "/api"
+      : (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api");
     this.url = `${baseUrl}/investigations/${caseId}/stream`;
     this.onMessage = callbacks.onMessage;
     this.onError = callbacks.onError || console.error;

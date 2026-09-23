@@ -38,7 +38,7 @@ export default function InvestigationWorkspace({ params }: { params: { id: strin
 
     getCase(params.id)
       .catch(() => {
-        return fetch(`http://localhost:8000/api/investigations/${params.id}`).then((r) => {
+        return fetch(`/api/investigations/${params.id}`).then((r) => {
           if (!r.ok) throw new Error(`Case ${params.id} not found`);
           return r.json();
         });
