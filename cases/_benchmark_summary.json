@@ -1,16 +1,16 @@
 {
-  "total_cases": 5,
-  "successful": 5,
+  "total_cases": 20,
+  "successful": 20,
   "failed": 0,
-  "valid_json_outputs": 5,
-  "fraud_verdicts": 5,
-  "cleared_verdicts": 0,
-  "avg_latency_s": 7.27,
+  "valid_json_outputs": 20,
+  "fraud_verdicts": 19,
+  "cleared_verdicts": 1,
+  "avg_latency_s": 5.16,
   "results": [
     {
       "case_id": "HHG-001",
       "success": true,
-      "latency_s": 5.23,
+      "latency_s": 4.4,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.69,
@@ -21,7 +21,7 @@
     {
       "case_id": "HHG-002",
       "success": true,
-      "latency_s": 6.61,
+      "latency_s": 3.62,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.69,
@@ -32,7 +32,7 @@
     {
       "case_id": "HHG-003",
       "success": true,
-      "latency_s": 6.15,
+      "latency_s": 3.65,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.702,
@@ -43,7 +43,7 @@
     {
       "case_id": "HHG-004",
       "success": true,
-      "latency_s": 12.45,
+      "latency_s": 4.32,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.702,
@@ -54,7 +54,172 @@
     {
       "case_id": "HHG-005",
       "success": true,
-      "latency_s": 5.89,
+      "latency_s": 5.33,
+      "events": 23,
+      "final_verdict": "fraud",
+      "fraud_probability": 0.69,
+      "pattern": "card_testing",
+      "sar_filed": false,
+      "tool_calls": 0
+    },
+    {
+      "case_id": "HHG-006",
+      "success": true,
+      "latency_s": 5.43,
+      "events": 23,
+      "final_verdict": "fraud",
+      "fraud_probability": 0.702,
+      "pattern": "account_takeover",
+      "sar_filed": false,
+      "tool_calls": 0
+    },
+    {
+      "case_id": "HHG-007",
+      "success": true,
+      "latency_s": 5.12,
+      "events": 23,
+      "final_verdict": "fraud",
+      "fraud_probability": 0.69,
+      "pattern": "card_testing",
+      "sar_filed": false,
+      "tool_calls": 0
+    },
+    {
+      "case_id": "HHG-008",
+      "success": true,
+      "latency_s": 5.85,
+      "events": 23,
+      "final_verdict": "fraud",
+      "fraud_probability": 0.702,
+      "pattern": "account_takeover",
+      "sar_filed": false,
+      "tool_calls": 0
+    },
+    {
+      "case_id": "HHG-009",
+      "success": true,
+      "latency_s": 5.02,
+      "events": 23,
+      "final_verdict": "fraud",
+      "fraud_probability": 0.702,
+      "pattern": "account_takeover",
+      "sar_filed": false,
+      "tool_calls": 0
+    },
+    {
+      "case_id": "HHG-010",
+      "success": true,
+      "latency_s": 4.8,
+      "events": 23,
+      "final_verdict": "fraud",
+      "fraud_probability": 0.69,
+      "pattern": "card_testing",
+      "sar_filed": false,
+      "tool_calls": 0
+    },
+    {
+      "case_id": "HHG-011",
+      "success": true,
+      "latency_s": 3.89,
+      "events": 23,
+      "final_verdict": "fraud",
+      "fraud_probability": 0.702,
+      "pattern": "account_takeover",
+      "sar_filed": false,
+      "tool_calls": 0
+    },
+    {
+      "case_id": "HHG-012",
+      "success": true,
+      "latency_s": 6.22,
+      "events": 23,
+      "final_verdict": "fraud",
+      "fraud_probability": 0.69,
+      "pattern": "card_testing",
+      "sar_filed": false,
+      "tool_calls": 0
+    },
+    {
+      "case_id": "HHG-013",
+      "success": true,
+      "latency_s": 4.22,
+      "events": 23,
+      "final_verdict": "fraud",
+      "fraud_probability": 0.69,
+      "pattern": "card_testing",
+      "sar_filed": false,
+      "tool_calls": 0
+    },
+    {
+      "case_id": "HHG-014",
+      "success": true,
+      "latency_s": 5.1,
+      "events": 22,
+      "final_verdict": "uncertain",
+      "fraud_probability": 0.183,
+      "pattern": "card_testing",
+      "sar_filed": false,
+      "tool_calls": 0
+    },
+    {
+      "case_id": "HHG-015",
+      "success": true,
+      "latency_s": 5.95,
+      "events": 23,
+      "final_verdict": "fraud",
+      "fraud_probability": 0.69,
+      "pattern": "card_testing",
+      "sar_filed": false,
+      "tool_calls": 0
+    },
+    {
+      "case_id": "HHG-016",
+      "success": true,
+      "latency_s": 8.6,
+      "events": 23,
+      "final_verdict": "fraud",
+      "fraud_probability": 0.702,
+      "pattern": "account_takeover",
+      "sar_filed": false,
+      "tool_calls": 0
+    },
+    {
+      "case_id": "HHG-017",
+      "success": true,
+      "latency_s": 8.04,
+      "events": 23,
+      "final_verdict": "fraud",
+      "fraud_probability": 0.69,
+      "pattern": "card_testing",
+      "sar_filed": false,
+      "tool_calls": 0
+    },
+    {
+      "case_id": "HHG-018",
+      "success": true,
+      "latency_s": 5.14,
+      "events": 23,
+      "final_verdict": "fraud",
+      "fraud_probability": 0.702,
+      "pattern": "account_takeover",
+      "sar_filed": false,
+      "tool_calls": 0
+    },
+    {
+      "case_id": "HHG-019",
+      "success": true,
+      "latency_s": 4.2,
+      "events": 23,
+      "final_verdict": "fraud",
+      "fraud_probability": 0.69,
+      "pattern": "card_testing",
+      "sar_filed": false,
+      "tool_calls": 0
+    },
+    {
+      "case_id": "HHG-020",
+      "success": true,
+      "latency_s": 4.25,
       "events": 23,
       "final_verdict": "fraud",
       "fraud_probability": 0.69,
@@ -86,6 +251,81 @@
     },
     {
       "case_id": "HHG-005",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "case_id": "HHG-006",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "case_id": "HHG-007",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "case_id": "HHG-008",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "case_id": "HHG-009",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "case_id": "HHG-010",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "case_id": "HHG-011",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "case_id": "HHG-012",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "case_id": "HHG-013",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "case_id": "HHG-014",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "case_id": "HHG-015",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "case_id": "HHG-016",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "case_id": "HHG-017",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "case_id": "HHG-018",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "case_id": "HHG-019",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "case_id": "HHG-020",
       "valid": true,
       "issues": []
     }

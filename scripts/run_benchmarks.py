@@ -64,9 +64,10 @@ async def run_case(case_row: dict) -> dict:
         ""
     )
     txn_id     = (
-        case_row.get("txn_id") or
-        case_row.get("TransactionID") or
-        case_row.get("transaction_id") or
+        str(case_row.get("flagged_txn_id") or "").strip() or
+        str(case_row.get("txn_id") or "").strip() or
+        str(case_row.get("TransactionID") or "").strip() or
+        str(case_row.get("transaction_id") or "").strip() or
         ""
     )
     card_id    = (
