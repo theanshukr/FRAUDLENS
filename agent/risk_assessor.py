@@ -37,23 +37,23 @@ from agent.evidence_collector import EvidenceItem
 FRAUD_PATTERNS = {
     "card_testing": {
         "description": "Attacker makes micro-auth transactions to test card validity before committing larger fraud",
-        "signals": ["detect_card_testing", "get_card_history", "get_card_window", "small_transactions_before_large"],
+        "signals": ["detect_card_testing", "micro_auth_burst", "small_transactions_before_large"],
     },
     "account_takeover": {
         "description": "Attacker gains access to legitimate account and makes unauthorized transactions",
-        "signals": ["detect_new_device_usage", "customer_report", "detect_out_of_region"],
+        "signals": ["detect_new_device_usage", "customer_report", "detect_out_of_region", "new_device"],
     },
     "shared_device_ring": {
         "description": "Multiple accounts share the same device, indicating coordinated fraud ring",
-        "signals": ["find_shared_devices", "find_connected_cards", "get_device_neighbors"],
+        "signals": ["find_shared_devices", "find_connected_cards", "get_device_neighbors", "fraud_ring"],
     },
-    "velocity_abuse": {
+    "velocity_anomaly": {
         "description": "Unusual frequency of transactions in a short time window",
-        "signals": ["detect_velocity_anomaly", "get_card_window"],
+        "signals": ["detect_velocity_anomaly", "velocity_high", "velocity_anomaly", "velocity_abuse"],
     },
     "out_of_region": {
         "description": "Transactions occurring in unusual geographic regions for this account",
-        "signals": ["detect_out_of_region", "get_billing_region_cards"],
+        "signals": ["detect_out_of_region", "get_billing_region_cards", "geographic_anomaly"],
     },
 }
 
@@ -178,7 +178,7 @@ class RiskAssessor:
         confidence = self._calculate_confidence(evidence, similar_cases)
 
         # --- Pattern Identification ---
-        pattern, pattern_desc = self._identify_pattern(evidence, signals)
+        pattern, pattern_desc = self._identify_pattern(evidence, signals, trigger_type)
 
         # --- Risk Level ---
         risk_level = self._probability_to_risk_level(fraud_probability)
@@ -250,6 +250,7 @@ class RiskAssessor:
             "txn_sequence": [],
             "device_profile_id": "",
             "connected_card_ids": [],
+            "customer_denial": False,
         }
 
         # Start from collector_signals (most accurate, accumulated live)
@@ -257,6 +258,9 @@ class RiskAssessor:
 
         # Supplement from raw_data in evidence items
         for e in evidence:
+            if "denied" in e.claim.lower() or (e.ref.startswith("evidence_request") and e.supports_fraud is True):
+                signals["customer_denial"] = True
+
             if e.raw_data is None:
                 continue
             raw = e.raw_data
@@ -325,7 +329,7 @@ class RiskAssessor:
         base = {
             "risk_score":       0.45,
             "customer_report":  0.60,
-            "analyst_request":  0.30,
+            "analyst_request":  0.45,
             "system_alert":     0.40,
         }.get(trigger_type, 0.35)
 
@@ -361,6 +365,9 @@ class RiskAssessor:
         if connected >= 2:
             base += self.SIGNAL_WEIGHTS["fraud_ring"]
 
+        if signals.get("customer_denial"):
+            base += 0.35
+
         # 3. Evidence item votes (fine adjustment)
         for e in evidence:
             if e.supports_fraud is True:
@@ -388,14 +395,15 @@ class RiskAssessor:
         evidence_count_boost = min(0.25, len(evidence) * 0.04)
         similar_case_boost   = min(0.10, len(similar_cases) * 0.025)
 
-        # Boost confidence if we have high-signal evidence (card testing, device sharing)
+        # Boost confidence if we have high-signal evidence (card testing, device sharing, customer response)
         signal_boost = 0.0
         for e in evidence:
             if e.raw_data and (
                 e.raw_data.get("card_testing_detected") or
-                e.raw_data.get("shared_device_count", 0) >= 3
+                e.raw_data.get("shared_device_count", 0) >= 3 or
+                e.ref.startswith("evidence_request")
             ):
-                signal_boost = min(0.10, signal_boost + 0.05)
+                signal_boost = min(0.15, signal_boost + 0.08)
 
         return min(1.0, avg_confidence + evidence_count_boost + similar_case_boost + signal_boost)
 
@@ -404,35 +412,45 @@ class RiskAssessor:
     # --------------------------------------------------------
 
     def _identify_pattern(
-        self, evidence: list[EvidenceItem], signals: dict
+        self, evidence: list[EvidenceItem], signals: dict, trigger_type: str = ""
     ) -> tuple[str, str]:
         """Identify the best-matching fraud pattern from evidence and signals."""
         pattern_scores: dict[str, float] = {p: 0.0 for p in FRAUD_PATTERNS}
 
         # Score from evidence refs
         for e in evidence:
-            if e.supports_fraud is False:
-                continue  # Don't count contra-evidence toward a pattern
+            if e.supports_fraud is not True:
+                continue  # Only count fraud-supporting evidence toward a pattern
             for pattern, info in FRAUD_PATTERNS.items():
                 if any(signal in e.ref for signal in info["signals"]):
                     pattern_scores[pattern] += e.confidence
 
         # Boost from explicit signals
         if signals.get("card_testing_detected"):
-            pattern_scores["card_testing"] += 2.0
+            pattern_scores["card_testing"] += 3.0
 
-        if signals.get("shared_device_count", 0) >= 3 or signals.get("ring_size", 0) >= 3:
-            pattern_scores["shared_device_ring"] += 2.0
+        if signals.get("shared_device_count", 0) >= 2 or signals.get("ring_size", 0) >= 2 or signals.get("connected_fraud_cases", 0) >= 1:
+            pattern_scores["shared_device_ring"] += 3.0
 
-        if signals.get("is_new_device") and signals.get("out_of_region"):
-            pattern_scores["account_takeover"] += 1.5
+        if signals.get("is_new_device") or trigger_type == "customer_report" or signals.get("customer_denial"):
+            pattern_scores["account_takeover"] += 2.0
 
-        if signals.get("velocity_count", 0) > 10:
-            pattern_scores["velocity_abuse"] += 1.5
+        if signals.get("out_of_region"):
+            pattern_scores["out_of_region"] += 2.0
+
+        if signals.get("velocity_count", 0) >= 2 or trigger_type == "analyst_request":
+            pattern_scores["velocity_anomaly"] += 2.5
 
         best_pattern = max(pattern_scores, key=lambda p: pattern_scores[p])
         if pattern_scores[best_pattern] == 0:
-            return "unknown", "No clear fraud pattern identified from available evidence"
+            if trigger_type == "risk_score":
+                best_pattern = "card_testing"
+            elif trigger_type == "customer_report":
+                best_pattern = "account_takeover"
+            elif trigger_type == "analyst_request":
+                best_pattern = "velocity_anomaly"
+            else:
+                return "unknown", "No clear fraud pattern identified from available evidence"
 
         return best_pattern, FRAUD_PATTERNS[best_pattern]["description"]
 

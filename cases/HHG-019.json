@@ -2,17 +2,17 @@
   "case_id": "HHG-019",
   "txn_id": "3503878",
   "card_id": "C07987-K2",
-  "customer_id": null,
+  "customer_id": "C07987",
   "trigger_type": "risk_score",
   "trigger_risk_score": 0.9,
   "status": "RESOLVED",
-  "created_at": "2026-09-23T14:30:33.669752",
-  "updated_at": "2026-09-23T14:30:37.370549",
+  "created_at": "2026-09-23T17:20:32.081125",
+  "updated_at": "2026-09-23T17:20:35.567492",
   "initial_risk_level": "HIGH",
-  "initial_fraud_probability": 0.682,
-  "initial_confidence": 0.918,
-  "final_risk_level": "HIGH",
-  "final_fraud_probability": 0.69,
+  "initial_fraud_probability": 0.728,
+  "initial_confidence": 0.923,
+  "final_risk_level": "CRITICAL",
+  "final_fraud_probability": 1.0,
   "final_confidence": 1.0,
   "pattern": "card_testing",
   "pattern_description": "Attacker makes micro-auth transactions to test card validity before committing larger fraud",
@@ -26,7 +26,7 @@
         "3503878"
       ],
       "confidence": 0.4,
-      "timestamp": "2026-09-23T14:30:33.907088",
+      "timestamp": "2026-09-23T17:20:32.322613",
       "raw_data": {
         "@@results": []
       },
@@ -41,7 +41,7 @@
         "C07987-K2"
       ],
       "confidence": 0.55,
-      "timestamp": "2026-09-23T14:30:34.147943",
+      "timestamp": "2026-09-23T17:20:32.583008",
       "raw_data": {
         "transaction_count": 1,
         "micro_txn_count": 1
@@ -54,12 +54,12 @@
       "source": "graph",
       "ref": "get_device_neighbors",
       "entity_ids": [],
-      "confidence": 0.55,
-      "timestamp": "2026-09-23T14:30:34.381574",
+      "confidence": 0.5,
+      "timestamp": "2026-09-23T17:20:32.877723",
       "raw_data": {
         "shared_device_count": 0
       },
-      "supports_fraud": false
+      "supports_fraud": null
     },
     {
       "evidence_id": "EVD-0004",
@@ -69,13 +69,13 @@
       "entity_ids": [
         "C07987-K2"
       ],
-      "confidence": 0.6,
-      "timestamp": "2026-09-23T14:30:34.620639",
+      "confidence": 0.5,
+      "timestamp": "2026-09-23T17:20:33.123010",
       "raw_data": {
         "ring_size": 1,
         "connected_card_ids": []
       },
-      "supports_fraud": false
+      "supports_fraud": null
     },
     {
       "evidence_id": "EVD-0005",
@@ -86,7 +86,7 @@
         "C07987-K2"
       ],
       "confidence": 0.92,
-      "timestamp": "2026-09-23T14:30:34.853815",
+      "timestamp": "2026-09-23T17:20:33.362624",
       "raw_data": {
         "card_testing_detected": true
       },
@@ -99,7 +99,7 @@
       "ref": "search_similar_cases",
       "entity_ids": [],
       "confidence": 0.6,
-      "timestamp": "2026-09-23T14:30:35.104656",
+      "timestamp": "2026-09-23T17:20:33.613180",
       "raw_data": {
         "result_count": 1,
         "fraud_case_count": 0
@@ -113,7 +113,7 @@
       "ref": "evidence_request:REQ-001",
       "entity_ids": [],
       "confidence": 0.9,
-      "timestamp": "2026-09-23T14:30:35.694007",
+      "timestamp": "2026-09-23T17:20:33.858266",
       "raw_data": {
         "request_id": "REQ-001",
         "scenario": "deny"
@@ -129,7 +129,7 @@
         "3503878"
       ],
       "confidence": 0.4,
-      "timestamp": "2026-09-23T14:30:35.929892",
+      "timestamp": "2026-09-23T17:20:34.102887",
       "raw_data": {
         "@@results": []
       },
@@ -144,7 +144,7 @@
         "C07987-K2"
       ],
       "confidence": 0.55,
-      "timestamp": "2026-09-23T14:30:36.163025",
+      "timestamp": "2026-09-23T17:20:34.353456",
       "raw_data": {
         "transaction_count": 1,
         "micro_txn_count": 1
@@ -157,12 +157,12 @@
       "source": "graph",
       "ref": "get_device_neighbors",
       "entity_ids": [],
-      "confidence": 0.55,
-      "timestamp": "2026-09-23T14:30:36.398530",
+      "confidence": 0.5,
+      "timestamp": "2026-09-23T17:20:34.593023",
       "raw_data": {
         "shared_device_count": 0
       },
-      "supports_fraud": false
+      "supports_fraud": null
     },
     {
       "evidence_id": "EVD-0010",
@@ -172,13 +172,13 @@
       "entity_ids": [
         "C07987-K2"
       ],
-      "confidence": 0.6,
-      "timestamp": "2026-09-23T14:30:36.639701",
+      "confidence": 0.5,
+      "timestamp": "2026-09-23T17:20:34.833147",
       "raw_data": {
         "ring_size": 1,
         "connected_card_ids": []
       },
-      "supports_fraud": false
+      "supports_fraud": null
     },
     {
       "evidence_id": "EVD-0011",
@@ -189,7 +189,7 @@
         "C07987-K2"
       ],
       "confidence": 0.92,
-      "timestamp": "2026-09-23T14:30:36.872323",
+      "timestamp": "2026-09-23T17:20:35.078247",
       "raw_data": {
         "card_testing_detected": true
       },
@@ -202,7 +202,7 @@
       "ref": "search_similar_cases",
       "entity_ids": [],
       "confidence": 0.6,
-      "timestamp": "2026-09-23T14:30:37.132937",
+      "timestamp": "2026-09-23T17:20:35.315749",
       "raw_data": {
         "result_count": 1,
         "fraud_case_count": 0
@@ -252,11 +252,29 @@
   ],
   "final_actions": [
     {
+      "action": "BLOCK_CARD",
+      "route": "L1",
+      "reason": "High fraud probability with sufficient evidence",
+      "policy_rule": "R1",
+      "priority": 1,
+      "is_mandatory": true,
+      "status": "pending"
+    },
+    {
+      "action": "BLOCK_TRANSACTION",
+      "route": "L1",
+      "reason": "High fraud probability with sufficient evidence",
+      "policy_rule": "R1",
+      "priority": 2,
+      "is_mandatory": true,
+      "status": "pending"
+    },
+    {
       "action": "MONITOR_ACCOUNT",
       "route": "auto",
       "reason": "Fraud probability above monitoring threshold (0.30)",
       "policy_rule": "R3",
-      "priority": 1,
+      "priority": 3,
       "is_mandatory": true,
       "status": "pending"
     },
@@ -265,16 +283,7 @@
       "route": "auto",
       "reason": "Fraud probability above monitoring threshold (0.30)",
       "policy_rule": "R3",
-      "priority": 2,
-      "is_mandatory": true,
-      "status": "pending"
-    },
-    {
-      "action": "BLOCK_CARD",
-      "route": "L1",
-      "reason": "No customer response with high fraud probability",
-      "policy_rule": "R10",
-      "priority": 3,
+      "priority": 4,
       "is_mandatory": true,
       "status": "pending"
     },
@@ -283,12 +292,12 @@
       "route": "auto",
       "reason": "No customer response with high fraud probability",
       "policy_rule": "R10",
-      "priority": 4,
+      "priority": 5,
       "is_mandatory": true,
       "status": "pending"
     }
   ],
-  "what_changed": "New evidence: 'Historical memory: 1 similar cases found \u2014 mixed outcomes.'\n\nRisk changed: HIGH \u2192 HIGH\nFraud probability: 68% \u2192 69% (\u21911%)\nConfidence: 92% \u2192 100% (\u21918%)",
+  "what_changed": "New evidence: 'Historical memory: 1 similar cases found \u2014 mixed outcomes.'\n\nRisk changed: HIGH \u2192 CRITICAL\nFraud probability: 73% \u2192 100% (\u219127%)\nConfidence: 92% \u2192 100% (\u21918%)\n\nNew actions required: BLOCK_TRANSACTION",
   "final_verdict": "fraud",
   "exposure_usd": 450.0,
   "sar": {
@@ -303,73 +312,67 @@
     {
       "event_type": "CASE_CREATED",
       "description": "Investigation triggered by risk_score",
-      "timestamp": "2026-09-23T14:30:33.669752",
+      "timestamp": "2026-09-23T17:20:32.081125",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:TRIGGERED   INVESTIGATING",
       "description": "Building investigation plan",
-      "timestamp": "2026-09-23T14:30:33.669752",
+      "timestamp": "2026-09-23T17:20:32.081125",
       "metadata": {}
     },
     {
       "event_type": "INITIAL_ASSESSMENT",
-      "description": "Initial risk: HIGH (68% probability)",
-      "timestamp": "2026-09-23T14:30:35.693454",
+      "description": "Initial risk: HIGH (73% probability)",
+      "timestamp": "2026-09-23T17:20:33.857704",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:INVESTIGATING   AWAITING_EVIDENCE",
       "description": "Requesting additional evidence",
-      "timestamp": "2026-09-23T14:30:35.693454",
+      "timestamp": "2026-09-23T17:20:33.857704",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:AWAITING_EVIDENCE   REASSESSING",
       "description": "New evidence received \u2014 reassessing",
-      "timestamp": "2026-09-23T14:30:35.693454",
-      "metadata": {}
-    },
-    {
-      "event_type": "STATUS_CHANGE:REASSESSING   AWAITING_EVIDENCE",
-      "description": "Requesting additional evidence",
-      "timestamp": "2026-09-23T14:30:37.369445",
+      "timestamp": "2026-09-23T17:20:33.858266",
       "metadata": {}
     },
     {
       "event_type": "FINAL_ASSESSMENT",
-      "description": "Final risk: HIGH (69% probability)",
-      "timestamp": "2026-09-23T14:30:37.369445",
+      "description": "Final risk: CRITICAL (100% probability)",
+      "timestamp": "2026-09-23T17:20:35.563160",
       "metadata": {}
     },
     {
-      "event_type": "STATUS_CHANGE:AWAITING_EVIDENCE   ACTION_RECOMMENDED",
+      "event_type": "STATUS_CHANGE:REASSESSING   ACTION_RECOMMENDED",
       "description": "Generating Next-Best-Action",
-      "timestamp": "2026-09-23T14:30:37.369445",
+      "timestamp": "2026-09-23T17:20:35.563160",
       "metadata": {}
     },
     {
       "event_type": "NBA_INITIAL",
       "description": "NBA generated: ['MONITOR_ACCOUNT', 'CREATE_CASE', 'BLOCK_CARD', 'WARN_CUSTOMER']",
-      "timestamp": "2026-09-23T14:30:37.370549",
+      "timestamp": "2026-09-23T17:20:35.567492",
       "metadata": {}
     },
     {
       "event_type": "NBA_FINAL",
-      "description": "NBA generated: ['MONITOR_ACCOUNT', 'CREATE_CASE', 'BLOCK_CARD', 'WARN_CUSTOMER']",
-      "timestamp": "2026-09-23T14:30:37.370549",
+      "description": "NBA generated: ['BLOCK_CARD', 'BLOCK_TRANSACTION', 'MONITOR_ACCOUNT', 'CREATE_CASE', 'WARN_CUSTOMER']",
+      "timestamp": "2026-09-23T17:20:35.567492",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:ACTION_RECOMMENDED   AWAITING_APPROVAL",
       "description": "Awaiting L1 analyst approval",
-      "timestamp": "2026-09-23T14:30:37.370549",
+      "timestamp": "2026-09-23T17:20:35.567492",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:AWAITING_APPROVAL   RESOLVED",
       "description": "Case resolved: FRAUD",
-      "timestamp": "2026-09-23T14:30:37.370549",
+      "timestamp": "2026-09-23T17:20:35.567492",
       "metadata": {}
     }
   ],
@@ -393,7 +396,7 @@
   "case": {
     "status": "closed_fraud",
     "verdict": "fraud",
-    "fraud_probability": 0.69,
+    "fraud_probability": 1.0,
     "pattern": "card_testing",
     "pattern_description": "",
     "affected_txn_ids": [
@@ -502,7 +505,7 @@
       }
     ],
     "similar_prior_cases": [],
-    "summary": "Investigation for HHG-019 concluded with verdict FRAUD (69% probability) under pattern card_testing.",
+    "summary": "Investigation for case HHG-019 (Txn: 3503878) detected card_testing pattern with 100.0% fraud probability based on 13 collected graph signals.",
     "written_to_graph": true,
     "graph_case_id": "HHG-019"
   },
@@ -531,6 +534,16 @@
     ],
     "final": [
       {
+        "action": "BLOCK_CARD",
+        "route": "L1",
+        "reason": "High fraud probability with sufficient evidence"
+      },
+      {
+        "action": "BLOCK_TRANSACTION",
+        "route": "L1",
+        "reason": "High fraud probability with sufficient evidence"
+      },
+      {
         "action": "MONITOR_ACCOUNT",
         "route": "auto",
         "reason": "Fraud probability above monitoring threshold (0.30)"
@@ -541,17 +554,12 @@
         "reason": "Fraud probability above monitoring threshold (0.30)"
       },
       {
-        "action": "BLOCK_CARD",
-        "route": "L1",
-        "reason": "No customer response with high fraud probability"
-      },
-      {
         "action": "WARN_CUSTOMER",
         "route": "auto",
         "reason": "No customer response with high fraud probability"
       }
     ],
-    "what_changed": "nothing"
+    "what_changed": "Actions escalated following customer verification response"
   },
   "evidence_requests": [
     {
@@ -562,5 +570,5 @@
   ],
   "stop_reason": "Defensible decision reached with conclusive graph evidence",
   "tokens": 0,
-  "latency_s": 3.7
+  "latency_s": 3.49
 }

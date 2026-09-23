@@ -23,6 +23,7 @@ Endpoints:
     GET    /api/investigations/:id/evidence          Evidence list
     GET    /api/investigations/:id/timeline          Case timeline
     GET    /api/investigations/:id/graph             Graph data for visualisation
+    GET    /api/investigations/:id/graph/expand      Expand entity neighbors (live TG)
     GET    /api/investigations/:id/recommendation    NBA recommendation
     POST   /api/investigations/:id/approve           Approve action
     POST   /api/investigations/:id/reject            Reject action
@@ -35,6 +36,7 @@ Endpoints:
     GET    /api/memory                               Historical cases
     GET    /api/benchmarks/run                       Trigger benchmark run
     GET    /api/benchmarks/status/:run_id            Benchmark run status
+    GET    /api/system/status                        System connectivity status
     GET    /api/health                               Health check
 """
 
@@ -542,10 +544,10 @@ async def get_timeline(case_id: str):
 async def get_graph_data(case_id: str):
     """
     Build graph visualization data from the case evidence.
-    Constructs nodes/edges from entity_ids in evidence items.
-    Returns Cytoscape.js / React Flow compatible format.
+    Constructs nodes/edges from real entity_ids recorded in evidence items.
+    Enriches with live TigerGraph data when available.
+    Returns React Flow compatible format.
     """
-    # Load case data
     inv = _store.get(case_id)
     case_data = (inv.case_data if inv else None) or _load_case_from_disk(case_id)
 
@@ -557,166 +559,214 @@ async def get_graph_data(case_id: str):
 
 def _build_graph(case_data: dict) -> GraphResponse:
     """
-    Build an enterprise-grade, rich multi-hop GraphResponse from case data.
-    Generates rich entity clusters:
-      - Customer
-      - Card
-      - Flagged Transaction (High Risk)
-      - Prior Card Transactions (History / Micro-transactions)
-      - Device Profile (Fingerprint / Hardware)
-      - Billing Region & Email Domain
-    Strictly ensures exactly 1 edge per node-pair to eliminate all visual collision.
+    Build a GraphResponse from REAL case data — no synthetic node generation.
+
+    Sources of truth (in priority order):
+      1. entity_ids in evidence items (recorded by TigerGraph query parsers)
+      2. case_data top-level fields: txn_id, card_id, customer_id
+      3. case.connected_card_ids, case.connected_device_profiles
+
+    REMOVED:
+      - Hardcoded '$482.12' transaction amounts
+      - DEV_FP_{txn_id[-4:]} generated device IDs
+      - base_txn_num - 2 / base_txn_num - 1420 arithmetic transactions
+      - REGION_{txn_id[-3:]} generated billing region IDs
+      - CUST_{txn_id[-4:]} generated customer IDs
     """
     nodes: dict[str, GraphNode] = {}
     suspicious_node_ids: set[str] = set()
+    pair_edge_map: dict[tuple[str, str], GraphEdge] = {}
 
     txn_id = str(case_data.get("txn_id") or "").strip()
     card_id = str(case_data.get("card_id") or "").strip()
     customer_id = str(case_data.get("customer_id") or "").strip()
-    pattern = str(case_data.get("pattern") or "card_testing")
-    final_verdict = str(case_data.get("final_verdict") or "fraud")
+    pattern = str(case_data.get("pattern") or "unknown")
+    final_verdict = str(case_data.get("final_verdict") or "unknown")
+    final_prob = case_data.get("final_fraud_probability") or 0.0
     evidence_list = case_data.get("evidence", [])
+    case_inner = case_data.get("case", {})
 
-    # 1. Customer Node
-    if not customer_id or customer_id == "None":
-        if card_id and "-" in card_id:
-            customer_id = card_id.split("-")[0]
-        else:
-            customer_id = f"CUST_{txn_id[-4:] if len(txn_id)>=4 else '01'}"
+    is_fraud = final_verdict == "fraud" or final_prob >= 0.50
 
-    nodes[customer_id] = GraphNode(
-        id=customer_id,
-        type="Customer",
-        label=f"Customer {customer_id}",
-        suspicious=False,
-        properties={"customer_id": customer_id, "account_status": "Verified", "tenure": "3.5 yrs"}
-    )
-
-    # 2. Card Node
-    if not card_id or card_id == "None":
-        card_id = f"{customer_id}-K1"
-
-    nodes[card_id] = GraphNode(
-        id=card_id,
-        type="Card",
-        label=f"Card {card_id}",
-        suspicious=True,
-        properties={"card_id": card_id, "network": "Visa/Mastercard", "status": "FLAGGED", "pattern": pattern.replace('_', ' ').title()}
-    )
-    suspicious_node_ids.add(card_id)
-
-    # 3. Main Flagged Transaction Node
-    if txn_id:
-        nodes[txn_id] = GraphNode(
-            id=txn_id,
-            type="Transaction",
-            label=f"Txn {txn_id} (FLAGGED)",
-            suspicious=True,
-            properties={"amount": "$482.12", "risk_score": "0.89", "verdict": "FLAGGED / SUSPICIOUS", "channel": "Online"}
-        )
-        suspicious_node_ids.add(txn_id)
-
-    # 4. Multi-Transaction History (Show 2-3 prior transactions made on this card)
-    if txn_id and txn_id.isdigit():
-        base_txn_num = int(txn_id)
-        # Prior micro-transaction or card test
-        prior_txn_1 = str(base_txn_num - 2)
-        nodes[prior_txn_1] = GraphNode(
-            id=prior_txn_1,
-            type="Transaction",
-            label=f"Txn {prior_txn_1} ($1.00)",
-            suspicious=True if pattern == "card_testing" else False,
-            properties={"amount": "$1.00", "type": "Micro-auth / Card Test", "channel": "Online"}
-        )
-        if pattern == "card_testing":
-            suspicious_node_ids.add(prior_txn_1)
-
-        # Prior legitimate transaction
-        prior_txn_2 = str(base_txn_num - 1420)
-        nodes[prior_txn_2] = GraphNode(
-            id=prior_txn_2,
-            type="Transaction",
-            label=f"Txn {prior_txn_2} ($45.50)",
-            suspicious=False,
-            properties={"amount": "$45.50", "type": "Normal Purchase", "channel": "POS"}
-        )
-
-    # 5. Device Profile Node
-    device_id = f"DEV_FP_{txn_id[-4:] if len(txn_id)>=4 else '01'}"
-    is_device_suspicious = pattern in ("account_takeover", "shared_device_ring") or any("new" in str(e.get("claim", "")).lower() for e in evidence_list)
-    nodes[device_id] = GraphNode(
-        id=device_id,
-        type="DeviceProfile",
-        label=f"Device {device_id}",
-        suspicious=is_device_suspicious,
-        properties={"os": "Android 13 / Chrome", "fingerprint": f"FP-{txn_id[-4:]}", "status": "New/Untrusted" if is_device_suspicious else "Recognized"}
-    )
-    if is_device_suspicious:
-        suspicious_node_ids.add(device_id)
-
-    # 6. Billing Region Node
-    region_id = f"REGION_{txn_id[-3:] if len(txn_id)>=3 else '444'}"
-    nodes[region_id] = GraphNode(
-        id=region_id,
-        type="BillingRegion",
-        label=f"Billing Region #{region_id[-3:]}",
-        suspicious=False,
-        properties={"region_code": region_id[-3:], "country": "US"}
-    )
-
-    # 7. Email Domain Node
-    domain_id = "DOMAIN_gmail.com" if int(txn_id[-1] if txn_id and txn_id[-1].isdigit() else "0") % 2 == 0 else "DOMAIN_yahoo.com"
-    nodes[domain_id] = GraphNode(
-        id=domain_id,
-        type="EmailDomain",
-        label=domain_id.replace("DOMAIN_", "@"),
-        suspicious=False,
-        properties={"domain": domain_id.replace("DOMAIN_", ""), "reputation": "Standard"}
-    )
-
-    # 8. Clean, Non-overlapping Directed Edges
-    pair_edge_map: dict[tuple[str, str], GraphEdge] = {}
-
+    # --- Helper: ensure exactly 1 edge per node-pair ---
     def add_edge(u: str, v: str, edge_type: str, label: str):
-        if u not in nodes or v not in nodes or u == v:
+        if not u or not v or u not in nodes or v not in nodes or u == v:
             return
         edge_key = tuple(sorted([u, v]))
         if edge_key not in pair_edge_map:
-            pair_edge_map[edge_key] = GraphEdge(
-                source=u,
-                target=v,
-                type=edge_type,
-                label=label
-            )
+            pair_edge_map[edge_key] = GraphEdge(source=u, target=v, type=edge_type, label=label)
 
-    # Topology:
-    # Customer -> OWNS -> Card
-    add_edge(customer_id, card_id, "OWNS", "Owns Card")
+    # --- 1. Customer node (from case data — real ID or derive from card) ---
+    if not customer_id or customer_id in ("None", ""):
+        if card_id and "-" in card_id:
+            customer_id = card_id.split("-")[0]  # e.g. C12382 from C12382-K1
+        # Do NOT fabricate CUST_XXXX — leave blank if no real ID
+    if customer_id and customer_id not in ("None", ""):
+        nodes[customer_id] = GraphNode(
+            id=customer_id,
+            type="Customer",
+            label=f"Customer {customer_id}",
+            suspicious=False,
+            properties={"customer_id": customer_id, "source": "case_data"}
+        )
 
-    # Card -> MADE -> Transactions
+    # --- 2. Card node (from case data) ---
+    if card_id and card_id not in ("None", ""):
+        nodes[card_id] = GraphNode(
+            id=card_id,
+            type="Card",
+            label=f"Card {card_id}",
+            suspicious=is_fraud,
+            properties={
+                "card_id": card_id,
+                "pattern": pattern.replace("_", " ").title(),
+                "status": "FLAGGED" if is_fraud else "MONITORED",
+                "source": "case_data",
+            }
+        )
+        if is_fraud:
+            suspicious_node_ids.add(card_id)
+
+    # --- 3. Flagged transaction node ---
     if txn_id:
+        # Retrieve real amount from evidence raw_data if available
+        real_amount = _extract_amount_from_evidence(evidence_list)
+        real_risk = _extract_risk_score_from_evidence(evidence_list)
+        nodes[txn_id] = GraphNode(
+            id=txn_id,
+            type="Transaction",
+            label=f"Txn {txn_id}" + (" (FLAGGED)" if is_fraud else ""),
+            suspicious=is_fraud,
+            properties={
+                "transaction_id": txn_id,
+                "amount": real_amount or "—",
+                "risk_score": f"{real_risk:.2f}" if real_risk else "—",
+                "verdict": final_verdict.upper(),
+                "fraud_probability": f"{final_prob*100:.0f}%",
+                "source": "TigerGraph" if real_amount else "case_data",
+            }
+        )
+        if is_fraud:
+            suspicious_node_ids.add(txn_id)
+
+    # --- 4. Connected cards from evidence entity_ids ---
+    connected_cards = list(case_inner.get("connected_card_ids") or [])
+    for ev in evidence_list:
+        for eid in (ev.get("entity_ids") or []):
+            if isinstance(eid, str) and eid.startswith("C") and "-K" in eid and eid != card_id:
+                if eid not in connected_cards:
+                    connected_cards.append(eid)
+    for connected_card in connected_cards[:4]:  # cap at 4 for visual clarity
+        if connected_card == card_id or connected_card in nodes:
+            continue
+        nodes[connected_card] = GraphNode(
+            id=connected_card,
+            type="Card",
+            label=f"Card {connected_card}",
+            suspicious=True,
+            properties={"card_id": connected_card, "status": "CONNECTED_SUSPICIOUS", "source": "TigerGraph"}
+        )
+        suspicious_node_ids.add(connected_card)
+
+    # --- 5. Device profile nodes from evidence entity_ids ---
+    device_ids_seen = set(case_inner.get("connected_device_profiles") or [])
+    for ev in evidence_list:
+        ref = ev.get("ref", "")
+        if "device" in ref.lower():
+            for eid in (ev.get("entity_ids") or []):
+                if isinstance(eid, str) and ("DEV" in eid.upper() or "FP" in eid.upper() or "DEVICE" in eid.upper()):
+                    device_ids_seen.add(eid)
+    for dev_id in list(device_ids_seen)[:3]:
+        if dev_id in nodes:
+            continue
+        is_dev_suspicious = pattern in ("account_takeover", "shared_device_ring")
+        nodes[dev_id] = GraphNode(
+            id=dev_id,
+            type="DeviceProfile",
+            label=f"Device {dev_id[:16]}",
+            suspicious=is_dev_suspicious,
+            properties={"device_id": dev_id, "status": "Suspicious" if is_dev_suspicious else "Profiled", "source": "TigerGraph"}
+        )
+        if is_dev_suspicious:
+            suspicious_node_ids.add(dev_id)
+
+    # --- 6. Similar case nodes (from evidence refs) ---
+    for ev in evidence_list:
+        if ev.get("ref", "") == "search_similar_cases":
+            for eid in (ev.get("entity_ids") or []):
+                if isinstance(eid, str) and eid.startswith("CC-") and eid not in nodes:
+                    nodes[eid] = GraphNode(
+                        id=eid,
+                        type="ClosedCase",
+                        label=f"Prior Case {eid}",
+                        suspicious=True,
+                        properties={"case_id": eid, "type": "Historical Fraud Case", "source": "case_memory"}
+                    )
+                    suspicious_node_ids.add(eid)
+
+    # --- Edges ---
+    if customer_id in nodes and card_id in nodes:
+        add_edge(customer_id, card_id, "OWNS", "Owns Card")
+    if card_id in nodes and txn_id in nodes:
         add_edge(card_id, txn_id, "MADE", "Flagged Txn")
-    if 'prior_txn_1' in locals() and prior_txn_1 in nodes:
-        add_edge(card_id, prior_txn_1, "MADE", "Card Test Txn")
-    if 'prior_txn_2' in locals() and prior_txn_2 in nodes:
-        add_edge(card_id, prior_txn_2, "MADE", "Normal Txn")
-
-    # Flagged Txn -> Linked Entities
-    if txn_id:
-        add_edge(txn_id, device_id, "FROM_DEVICE", "Used Device")
-        add_edge(txn_id, region_id, "BILLED_IN", "Billed In")
-        add_edge(txn_id, domain_id, "PURCHASER_EMAIL", "Email Domain")
+    for conn_card in connected_cards:
+        if conn_card in nodes and card_id in nodes:
+            add_edge(card_id, conn_card, "CONNECTED_TO", "Shared Device Link")
+    for dev_id in device_ids_seen:
+        if dev_id in nodes and txn_id in nodes:
+            add_edge(txn_id, dev_id, "FROM_DEVICE", "Used Device")
+        if dev_id in nodes and card_id in nodes:
+            add_edge(card_id, dev_id, "USED_DEVICE", "Device Profile")
+    for ev in evidence_list:
+        if ev.get("ref", "") == "search_similar_cases":
+            for eid in (ev.get("entity_ids") or []):
+                if eid in nodes and card_id in nodes:
+                    add_edge(card_id, eid, "SIMILAR_TO", "Similar Case")
 
     edges = list(pair_edge_map.values())
-    highlighted_paths = [[customer_id, card_id, txn_id, device_id]] if (customer_id and card_id and txn_id and device_id) else []
+    path = [n for n in [customer_id, card_id, txn_id] if n in nodes]
+    if path and list(device_ids_seen):
+        dev = next(iter(device_ids_seen))
+        if dev in nodes:
+            path.append(dev)
 
     return GraphResponse(
         nodes=list(nodes.values()),
         edges=edges,
-        highlighted_paths=highlighted_paths,
+        highlighted_paths=[path] if len(path) >= 2 else [],
         suspicious_nodes=list(suspicious_node_ids),
-        suspicious_edges=[f"{e.source}-{e.target}" for e in edges if e.source in suspicious_node_ids and e.target in suspicious_node_ids],
+        suspicious_edges=[
+            f"{e.source}-{e.target}" for e in edges
+            if e.source in suspicious_node_ids and e.target in suspicious_node_ids
+        ],
     )
+
+
+def _extract_amount_from_evidence(evidence_list: list[dict]) -> str:
+    """Extract real transaction amount from evidence raw_data."""
+    for ev in evidence_list:
+        raw = ev.get("raw_data") or {}
+        amount = raw.get("amount") or raw.get("TransactionAmt")
+        if amount and float(amount) > 0:
+            return f"${float(amount):.2f}"
+        claim = ev.get("claim", "")
+        import re
+        match = re.search(r'\$(\d+\.\d{2})', claim)
+        if match:
+            amt = float(match.group(1))
+            if amt > 1.00:  # ignore micro-auth amounts
+                return f"${amt:.2f}"
+    return ""
+
+
+def _extract_risk_score_from_evidence(evidence_list: list[dict]) -> float:
+    """Extract real risk score from evidence raw_data."""
+    for ev in evidence_list:
+        raw = ev.get("raw_data") or {}
+        rs = raw.get("risk_score") or raw.get("isFraud")
+        if rs and float(rs) > 0:
+            return float(rs)
+    return 0.0
 
 
 def _classify_entity(eid: str) -> tuple[str, str]:
@@ -734,6 +784,171 @@ def _classify_entity(eid: str) -> tuple[str, str]:
         return "ClosedCase", f"Case {eid}"
     else:
         return "Entity", eid[:16]
+
+
+@app.get("/api/investigations/{case_id}/graph/expand")
+async def expand_graph(
+    case_id: str,
+    entity_id: str = Query(..., description="Entity ID to expand"),
+    entity_type: str = Query("Transaction", description="Entity type (Transaction|Card|DeviceProfile|Customer)"),
+):
+    """
+    Expand neighbors of a graph node using live TigerGraph data.
+    Returns new nodes and edges to merge into the current graph visualization.
+    No synthetic data — purely from TigerGraph query results.
+    """
+    # Load case for context
+    inv = _store.get(case_id)
+    case_data = (inv.case_data if inv else None) or _load_case_from_disk(case_id)
+    if not case_data:
+        raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
+
+    # Try to get live TigerGraph connection
+    tg_conn = None
+    try:
+        from tools.graph_tools import get_tg_connection, expand_entity_neighbors
+        tg_conn = get_tg_connection()
+    except Exception as e:
+        logger.warning(f"TigerGraph not available for expansion: {e}")
+
+    if tg_conn is None:
+        # Without TigerGraph, return empty expansion with clear source label
+        return {
+            "case_id": case_id,
+            "entity_id": entity_id,
+            "entity_type": entity_type,
+            "nodes": [],
+            "edges": [],
+            "source": "no_tg_connection",
+            "message": "TigerGraph connection not available — expansion requires live database",
+        }
+
+    try:
+        result = expand_entity_neighbors(tg_conn, entity_id, entity_type)
+        # Parse results into GraphNode/GraphEdge format
+        new_nodes = []
+        new_edges = []
+
+        for row in result.get("results", []):
+            if isinstance(row, dict):
+                for key, val in row.items():
+                    if isinstance(val, dict) and "v_type" in val:
+                        # TigerGraph vertex format
+                        etype, elabel = _classify_entity(val.get("v_id", key))
+                        node = GraphNode(
+                            id=val.get("v_id", key),
+                            type=etype,
+                            label=elabel,
+                            suspicious=False,
+                            properties=val.get("attributes", {}),
+                        )
+                        if node.id != entity_id:
+                            new_nodes.append(node.model_dump())
+                            new_edges.append(GraphEdge(
+                                source=entity_id,
+                                target=node.id,
+                                type="RELATED",
+                                label=f"→ {etype}",
+                            ).model_dump())
+                    elif isinstance(val, list):
+                        for item in val:
+                            if isinstance(item, dict) and "v_type" in item:
+                                etype, elabel = _classify_entity(item.get("v_id", ""))
+                                node = GraphNode(
+                                    id=item.get("v_id", ""),
+                                    type=etype,
+                                    label=elabel,
+                                    suspicious=False,
+                                    properties=item.get("attributes", {}),
+                                )
+                                if node.id and node.id != entity_id:
+                                    new_nodes.append(node.model_dump())
+                                    new_edges.append(GraphEdge(
+                                        source=entity_id,
+                                        target=node.id,
+                                        type="RELATED",
+                                        label=f"→ {etype}",
+                                    ).model_dump())
+
+        return {
+            "case_id": case_id,
+            "entity_id": entity_id,
+            "entity_type": entity_type,
+            "nodes": new_nodes,
+            "edges": new_edges,
+            "source": "TigerGraph",
+            "raw_result_count": len(result.get("results", [])),
+        }
+
+    except Exception as e:
+        logger.error(f"Graph expansion failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Graph expansion failed: {e}")
+
+
+@app.get("/api/system/status")
+async def system_status():
+    """
+    Live system connectivity status for all FraudLens components.
+    Used by the frontend status bar to show real connection health.
+    """
+    import time
+    t0 = time.time()
+
+    # TigerGraph connectivity
+    tg_ok = False
+    tg_graph = ""
+    tg_host = ""
+    tg_error = ""
+    try:
+        from tools.graph_tools import get_tg_connection
+        conn = get_tg_connection()
+        tg_ok = conn is not None
+        if conn:
+            tg_graph = getattr(conn, "graphname", os.getenv("TG_GRAPH_NAME", "FraudLens"))
+            tg_host = getattr(conn, "host", os.getenv("TG_HOST", ""))
+    except Exception as e:
+        tg_error = str(e)[:100]
+
+    # LLM connectivity
+    llm_ok = False
+    llm_model = ""
+    try:
+        from agent.llm_client import GeminiClient
+        client = GeminiClient()
+        llm_ok = client.api_key is not None and len(client.api_key) > 10
+        llm_model = client.model
+    except Exception:
+        pass
+
+    # Cases on disk
+    cases_on_disk = len(list(CASES_DIR.glob("HHG-*.json")))
+    active_investigations = len(_store)
+
+    return {
+        "status": "ok",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "response_time_ms": round((time.time() - t0) * 1000, 1),
+        "components": {
+            "tigergraph": {
+                "connected": tg_ok,
+                "graph": tg_graph,
+                "host": tg_host.split("//")[-1].split(":")[0] if tg_host else "",
+                "error": tg_error if not tg_ok else None,
+                "mode": "LIVE" if tg_ok else "DISCONNECTED",
+            },
+            "llm": {
+                "connected": llm_ok,
+                "model": llm_model,
+                "provider": "Google Gemini",
+                "mode": "LIVE" if llm_ok else "UNAVAILABLE",
+            },
+            "agent": {
+                "mode": "LIVE" if tg_ok else "MOCK_FALLBACK",
+                "active_investigations": active_investigations,
+                "cases_on_disk": cases_on_disk,
+            },
+        },
+    }
 
 
 @app.get("/api/investigations/{case_id}/recommendation")

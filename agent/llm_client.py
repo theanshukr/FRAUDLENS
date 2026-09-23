@@ -25,7 +25,7 @@ class GeminiClient:
 
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or GEMINI_KEY
-        self.model_name = "gemini-3.6-flash"
+        self.model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
         self._model = None
 
         if self.api_key:
@@ -43,7 +43,7 @@ class GeminiClient:
             return fallback
 
         try:
-            response = self._model.generate_content(prompt)
+            response = self._model.generate_content(prompt, request_options={"timeout": 6.0})
             if response and response.text:
                 return response.text.strip()
         except Exception as e:

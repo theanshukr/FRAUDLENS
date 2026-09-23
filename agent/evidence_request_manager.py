@@ -171,10 +171,9 @@ class EvidenceRequestManager:
         """Choose the most appropriate evidence request type."""
         has_customer_input = any("customer" in e.source for e in evidence)
 
-        if assessment.pattern in ("account_takeover", "card_testing") and not has_customer_input:
-            return "customer_validation"
-
-        if assessment.fraud_probability > 0.5 and not has_customer_input:
+        if not has_customer_input:
+            if assessment.pattern == "shared_device_ring":
+                return "analyst_info"
             return "customer_validation"
 
         if assessment.pattern == "shared_device_ring":
@@ -183,7 +182,7 @@ class EvidenceRequestManager:
         if "Device relationship analysis not completed" in assessment.missing_evidence:
             return "analyst_info"
 
-        return None
+        return "step_up_auth"
 
     def _build_request(
         self,

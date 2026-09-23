@@ -1,255 +1,207 @@
 """
-FraudLens     Benchmark Runner
-==============================
-Runs all 20 benchmark cases from case_pack.csv through the agent pipeline
-and writes answer JSON files to cases/ directory.
+FraudLens — Benchmark Re-Runner (Phase 4.1)
+============================================
+Re-runs all 20 HHG benchmark cases through the LIVE FraudLens investigation pipeline
+using the real TigerGraph backend. Replaces previous case JSON files with fresh results.
 
-Usage:
-    python scripts/run_benchmarks.py
-    python scripts/run_benchmarks.py --case HHG-017    # Run single case
-    python scripts/run_benchmarks.py --limit 5          # Run first 5 cases
-
-Output:
-    cases/<case_id>.json     One file per benchmark case
-    cases/_benchmark_summary.json     Aggregate metrics
-
-Metrics tracked per case:
-    - tool_calls count
-    - tokens used (if available)
-    - latency_s
-    - fraud_probability
-    - final_verdict
-    - schema validation pass/fail
+Run: python scripts/run_benchmarks.py
 """
 
 from __future__ import annotations
 
-import argparse
 import asyncio
+import io
 import json
 import sys
 import time
 from pathlib import Path
 
+# Force UTF-8 output on Windows
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+else:
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
+# Ensure repo root is on sys.path so agent/tools/backend modules are importable
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 import pandas as pd
-from dotenv import load_dotenv
-from loguru import logger
 
-load_dotenv()
+CASES_DIR = REPO_ROOT / "cases"
+SAMPLE_DIR = REPO_ROOT / "dataset_sample"
+DATA_DIR = REPO_ROOT / "data"
 
-CASES_DIR  = Path("./cases")
-DATA_DIR   = Path("./data")
-SAMPLE_DIR = Path("./dataset_sample")
-
-# Search for case_pack.csv in data/ first, then dataset_sample/
-_CASE_PACK_CANDIDATES = [DATA_DIR / "case_pack.csv", SAMPLE_DIR / "case_pack.csv"]
-CASE_PACK = next((p for p in _CASE_PACK_CANDIDATES if p.exists()), _CASE_PACK_CANDIDATES[0])
+CASE_PACK = SAMPLE_DIR / "case_pack.csv" if (SAMPLE_DIR / "case_pack.csv").exists() else DATA_DIR / "case_pack.csv"
 
 
-async def run_case(case_row: dict) -> dict:
-    """Run a single benchmark case through the agent pipeline."""
-    from agent.orchestrator import Orchestrator
-
-    orch = Orchestrator(cases_dir=str(CASES_DIR))
-
-    # Handle multiple possible column name conventions in case_pack.csv
-    case_id    = (
-        case_row.get("case_id") or
-        case_row.get("HHG_case_id") or
-        case_row.get("Case_ID") or
-        ""
-    )
-    txn_id     = (
-        str(case_row.get("flagged_txn_id") or "").strip() or
-        str(case_row.get("txn_id") or "").strip() or
-        str(case_row.get("TransactionID") or "").strip() or
-        str(case_row.get("transaction_id") or "").strip() or
-        ""
-    )
-    card_id    = (
-        case_row.get("card_id") or
-        case_row.get("Card_ID") or
-        None
-    )
-    trigger    = (
-        case_row.get("trigger_type") or
-        case_row.get("Trigger") or
-        "risk_score"
-    )
-    risk_score_raw = (
-        case_row.get("risk_score") or
-        case_row.get("initial_risk_score") or
-        0.5
-    )
-    risk_score = float(risk_score_raw)
-
-    logger.info(f"Running benchmark case: {case_id} | txn={txn_id}")
-    start = time.perf_counter()
-
-    events = []
-    try:
-        async for event in orch.investigate(
-            txn_id=txn_id,
-            trigger_type=trigger,
-            card_id=card_id,
-            trigger_risk_score=risk_score,
-            case_id=case_id,
-        ):
-            events.append(event)
-    except Exception as e:
-        logger.error(f"Case {case_id} failed: {e}")
-        return {
-            "case_id": case_id,
-            "success": False,
-            "error": str(e),
-            "latency_s": time.perf_counter() - start,
-        }
-
-    latency = time.perf_counter() - start
-
-    # Load the written case file
-    case_file = CASES_DIR / f"{case_id}.json"
-    case_data = {}
-    if case_file.exists():
-        with open(case_file) as f:
-            case_data = json.load(f)
-
-    result = {
-        "case_id": case_id,
-        "success": True,
-        "latency_s": round(latency, 2),
-        "events": len(events),
-        "final_verdict": case_data.get("final_verdict", "unknown"),
-        "fraud_probability": case_data.get("final_fraud_probability", 0.0),
-        "pattern": case_data.get("pattern", "unknown"),
-        "sar_filed": case_data.get("sar", {}).get("file", False),
-        "tool_calls": len(case_data.get("tool_calls", [])),
-    }
-    logger.success(
-        f"Case {case_id} complete | verdict={result['final_verdict']} | "
-        f"prob={result['fraud_probability']:.0%} | latency={result['latency_s']}s"
-    )
-    return result
-
-
-def validate_case_json(case_id: str) -> dict:
-    """Validate a case JSON file against the required answer format schema."""
-    case_file = CASES_DIR / f"{case_id}.json"
+def validate_case_json(data: dict) -> dict:
+    """Validate a case JSON against the hackathon benchmark schema."""
     issues = []
-
-    if not case_file.exists():
-        return {"case_id": case_id, "valid": False, "issues": ["File not found"]}
-
-    with open(case_file) as f:
-        data = json.load(f)
-
-    required_fields = [
-        "case_id", "txn_id", "trigger_type", "status",
-        "final_fraud_probability", "final_risk_level",
-        "pattern", "final_verdict", "final_actions",
-        "evidence", "timeline", "sar",
-    ]
-    for field in required_fields:
+    required_top = ["case", "sar", "next_best_action", "audit_trail", "benchmark"]
+    for field in required_top:
         if field not in data:
-            issues.append(f"Missing field: {field}")
+            issues.append(f"Missing top-level section: {field}")
 
-    # Check SAR consistency
-    sar_filed = data.get("sar", {}).get("file", False)
-    final_actions = [a.get("action") for a in data.get("final_actions", [])]
-    if sar_filed and "FILE_REPORT" not in final_actions:
-        issues.append("SAR filed but FILE_REPORT not in final_actions")
-    if not sar_filed and "FILE_REPORT" in final_actions:
-        issues.append("FILE_REPORT in actions but SAR not marked as filed")
+    if "case" in data:
+        case = data["case"]
+        for cf in ["status", "verdict", "fraud_probability", "pattern", "exposure_usd", "evidence"]:
+            if cf not in case:
+                issues.append(f"Missing case field: {cf}")
+
+    if "sar" in data:
+        sar = data["sar"]
+        for sf in ["file", "reason"]:
+            if sf not in sar:
+                issues.append(f"Missing sar field: {sf}")
+
+    if "next_best_action" in data:
+        nba = data["next_best_action"]
+        for nf in ["primary_action", "actions", "escalation_level"]:
+            if nf not in nba:
+                issues.append(f"Missing next_best_action field: {nf}")
 
     return {
-        "case_id": case_id,
         "valid": len(issues) == 0,
         "issues": issues,
     }
 
 
-async def run_benchmarks(case_filter: str = None, limit: int = None) -> None:
-    """Run all benchmark cases and produce summary report."""
+def validate_case_json_from_path(path: Path | str) -> dict:
+    """Validate a case JSON file from a path."""
+    p = Path(path)
+    if not p.exists():
+        return {"valid": False, "issues": [f"File does not exist: {p}"]}
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+        return validate_case_json(data)
+    except Exception as e:
+        return {"valid": False, "issues": [f"JSON parse error: {e}"]}
 
-    CASES_DIR.mkdir(parents=True, exist_ok=True)
+
+
+async def run_single_case(
+    case_id: str,
+    txn_id: str,
+    card_id: str,
+    customer_id: str,
+    trigger_type: str,
+    trigger_risk_score: float | None,
+) -> dict:
+    """Run a single investigation case through the live pipeline."""
+    from agent.orchestrator import Orchestrator
+
+    orch = Orchestrator(cases_dir=str(CASES_DIR))
+    events = []
+    final_event = {}
+
+    async for event in orch.investigate(
+        txn_id=str(txn_id),
+        trigger_type=trigger_type,
+        card_id=str(card_id) if card_id and str(card_id) != "nan" else None,
+        customer_id=str(customer_id) if customer_id and str(customer_id) != "nan" else None,
+        trigger_risk_score=float(trigger_risk_score) if trigger_risk_score and not pd.isna(trigger_risk_score) else None,
+        case_id=case_id,
+    ):
+        events.append(event)
+        event_type = event.get("type", "")
+        msg = event.get("message", "")[:80]
+        print(f"    [{event_type:20s}] {msg}")
+        if event_type == "complete":
+            final_event = event
+
+    return final_event
+
+
+async def run_all_benchmarks():
+    """Run all 20 HHG benchmark cases."""
+    print("=" * 70)
+    print("FraudLens — Live Benchmark Run (Phase 4.1)")
+    print("=" * 70)
 
     if not CASE_PACK.exists():
-        logger.error(f"case_pack.csv not found. Searched: {_CASE_PACK_CANDIDATES}")
-        logger.info("Copy case_pack.csv to ./data/ or ./dataset_sample/ first")
-        return
+        print(f"ERROR: case_pack.csv not found at {CASE_PACK}")
+        sys.exit(1)
 
     df = pd.read_csv(CASE_PACK)
-    logger.info(f"Loaded {len(df)} benchmark cases from {CASE_PACK}")
-
-    if case_filter:
-        df = df[df.apply(
-            lambda r: case_filter in str(r.get("case_id", "")) or case_filter in str(r.get("TransactionID", "")),
-            axis=1
-        )]
-        logger.info(f"Filtered to {len(df)} cases matching '{case_filter}'")
-
-    if limit:
-        df = df.head(limit)
-        logger.info(f"Limited to first {limit} cases")
+    print(f"Loaded {len(df)} cases from case_pack.csv")
 
     results = []
+    total_start = time.time()
+
     for _, row in df.iterrows():
-        result = await run_case(row.to_dict())
-        results.append(result)
+        case_id = str(row["case_id"])
+        txn_id = str(row["flagged_txn_id"])
+        card_id = str(row.get("card_id", ""))
+        customer_id = str(row.get("customer_id", ""))
+        trigger_type = str(row["trigger_type"])
+        risk_score = row.get("risk_score", None)
 
-    # Validate all outputs
-    logger.info("Validating output JSON files...")
-    validations = []
-    for result in results:
-        v = validate_case_json(result["case_id"])
-        validations.append(v)
-        if not v["valid"]:
-            logger.warning(f"  {result['case_id']}: INVALID     {v['issues']}")
-        else:
-            logger.success(f"  {result['case_id']}: VALID")
+        print(f"\n{'='*60}")
+        print(f"Running {case_id} | txn={txn_id} | card={card_id} | trigger={trigger_type}")
+        print(f"{'='*60}")
 
-    # Summary
-    total = len(results)
-    successful = sum(1 for r in results if r.get("success"))
-    valid_json = sum(1 for v in validations if v["valid"])
-    fraud_verdicts = sum(1 for r in results if r.get("final_verdict") == "fraud")
-    avg_latency = sum(r.get("latency_s", 0) for r in results) / total if total > 0 else 0
+        t0 = time.time()
+        try:
+            result = await run_single_case(
+                case_id=case_id,
+                txn_id=txn_id,
+                card_id=card_id,
+                customer_id=customer_id,
+                trigger_type=trigger_type,
+                trigger_risk_score=risk_score,
+            )
+            elapsed = time.time() - t0
+            verdict = result.get("verdict", "unknown")
+            prob = result.get("fraud_probability", 0.0)
+            print(f"  => {case_id}: verdict={verdict} prob={prob:.2f} [{elapsed:.1f}s]")
+            results.append({
+                "case_id": case_id,
+                "verdict": verdict,
+                "fraud_probability": prob,
+                "elapsed_s": round(elapsed, 2),
+                "success": True,
+                "error": None,
+            })
+        except Exception as e:
+            elapsed = time.time() - t0
+            print(f"  ERROR: {case_id} failed: {e}")
+            import traceback
+            traceback.print_exc()
+            results.append({
+                "case_id": case_id,
+                "verdict": "error",
+                "fraud_probability": 0.0,
+                "elapsed_s": round(elapsed, 2),
+                "success": False,
+                "error": str(e),
+            })
 
-    summary = {
-        "total_cases": total,
-        "successful": successful,
-        "failed": total - successful,
-        "valid_json_outputs": valid_json,
-        "fraud_verdicts": fraud_verdicts,
-        "cleared_verdicts": total - fraud_verdicts,
-        "avg_latency_s": round(avg_latency, 2),
+    total_elapsed = time.time() - total_start
+    print(f"\n{'='*70}")
+    print(f"BENCHMARK RUN COMPLETE: {len(results)} cases in {total_elapsed:.1f}s")
+    fraud_count = sum(1 for r in results if r["verdict"] == "fraud")
+    error_count = sum(1 for r in results if not r["success"])
+    print(f"  Fraud verdicts: {fraud_count}/{len(results)}")
+    print(f"  Errors: {error_count}")
+    print(f"  Avg time per case: {total_elapsed/len(results):.1f}s")
+
+    # Save run summary
+    run_summary = {
+        "run_at": __import__("datetime").datetime.now().isoformat(),
+        "total_cases": len(results),
+        "fraud_count": fraud_count,
+        "error_count": error_count,
+        "total_elapsed_s": round(total_elapsed, 1),
         "results": results,
-        "validations": validations,
     }
+    summary_path = CASES_DIR / "_last_run_summary.json"
+    summary_path.write_text(json.dumps(run_summary, indent=2))
+    print(f"\nRun summary written to: {summary_path}")
 
-    summary_path = CASES_DIR / "_benchmark_summary.json"
-    with open(summary_path, "w") as f:
-        json.dump(summary, f, indent=2)
-
-    logger.info("=" * 60)
-    logger.info(f"BENCHMARK RESULTS")
-    logger.info(f"  Total:      {total}")
-    logger.info(f"  Successful: {successful}/{total}")
-    logger.info(f"  Valid JSON: {valid_json}/{total}")
-    logger.info(f"  Fraud:      {fraud_verdicts} | Cleared: {total - fraud_verdicts}")
-    logger.info(f"  Avg Latency:{avg_latency:.2f}s")
-    logger.info(f"  Summary:    {summary_path}")
-    logger.info("=" * 60)
+    return results
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run FraudLens benchmark cases")
-    parser.add_argument("--case", type=str, help="Run specific case ID or transaction ID")
-    parser.add_argument("--limit", type=int, help="Run only first N cases")
-    args = parser.parse_args()
-
-    asyncio.run(run_benchmarks(case_filter=args.case, limit=args.limit))
+    asyncio.run(run_all_benchmarks())

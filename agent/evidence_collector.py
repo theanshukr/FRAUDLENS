@@ -193,6 +193,7 @@ class EvidenceCollector:
         from tools import graph_tools as gt
 
         # Map query_name → graph_tools function
+        # IMPORTANT: every mapping must correspond to an actual function in tools/graph_tools.py
         dispatch = {
             "get_transaction":         lambda: gt.get_transaction(self.tg_conn, step.params.get("txn_id", "")),
             "get_card_history":        lambda: gt.get_card_history(self.tg_conn, step.params.get("card_id", ""), step.params.get("days", 30)),
@@ -201,9 +202,12 @@ class EvidenceCollector:
             "find_shared_devices":     lambda: gt.find_shared_devices(self.tg_conn, step.params.get("card_id", "")),
             "find_connected_cards":    lambda: gt.find_connected_cards(self.tg_conn, step.params.get("card_id", ""), step.params.get("hops", 2)),
             "detect_card_testing":     lambda: gt.detect_card_testing(self.tg_conn, step.params.get("card_id", ""), step.params.get("hours", 24)),
-            "detect_new_device_usage": lambda: gt.get_card_history(self.tg_conn, step.params.get("card_id", ""), 30),
+            # FIXED: was incorrectly calling get_card_history — now uses dedicated detect_new_device_usage function
+            "detect_new_device_usage": lambda: gt.detect_new_device_usage(self.tg_conn, step.params.get("card_id", "")),
             "detect_velocity_anomaly": lambda: gt.detect_velocity_anomaly(self.tg_conn, step.params.get("card_id", ""), step.params.get("hours", 24)),
-            "detect_out_of_region":    lambda: gt.find_shared_devices(self.tg_conn, step.params.get("card_id", "")),
+            # FIXED: was incorrectly calling find_shared_devices — now uses dedicated detect_out_of_region function
+            "detect_out_of_region":    lambda: gt.detect_out_of_region(self.tg_conn, step.params.get("card_id", ""), step.params.get("days", 30)),
+            "get_billing_region_cards": lambda: gt.get_billing_region_cards(self.tg_conn, step.params.get("card_id", "")),
             "search_similar_cases":    lambda: gt.search_similar_cases(self.tg_conn, step.params.get("pattern", ""), step.params.get("device_profile_id", ""), step.params.get("card_ids", [])),
         }
 
@@ -211,6 +215,7 @@ class EvidenceCollector:
         if fn is None:
             raise ValueError(f"No live handler for query: {step.query_name}")
         return fn()
+
 
     # --------------------------------------------------------
     # Per-Query Evidence Parsers
@@ -384,12 +389,12 @@ class EvidenceCollector:
             confidence = 0.70
         elif shared_count == 1:
             claim = "Device profile is used by only 1 card — no device sharing detected."
-            supports_fraud = False
-            confidence = 0.65
+            supports_fraud = None
+            confidence = 0.50
         else:
             claim = "No device neighbors found — device profile is unique to this transaction."
-            supports_fraud = False
-            confidence = 0.55
+            supports_fraud = None
+            confidence = 0.50
 
         items.append(EvidenceItem(
             evidence_id=self._next_id(),
@@ -448,8 +453,8 @@ class EvidenceCollector:
             confidence = 0.75
         else:
             claim = "No connected cards found via device graph — this card appears isolated."
-            supports_fraud = False
-            confidence = 0.60
+            supports_fraud = None
+            confidence = 0.50
 
         items.append(EvidenceItem(
             evidence_id=self._next_id(),
@@ -484,8 +489,8 @@ class EvidenceCollector:
             confidence = 0.92
         else:
             claim = "No card testing pattern detected — transaction sequence does not show micro-auth burst."
-            supports_fraud = False
-            confidence = 0.70
+            supports_fraud = None
+            confidence = 0.50
 
         items.append(EvidenceItem(
             evidence_id=self._next_id(),
@@ -521,8 +526,8 @@ class EvidenceCollector:
             confidence = 0.78
         else:
             claim = "Transaction device profile matches prior usage history — familiar device."
-            supports_fraud = False
-            confidence = 0.65
+            supports_fraud = None
+            confidence = 0.50
 
         items.append(EvidenceItem(
             evidence_id=self._next_id(),
@@ -556,8 +561,8 @@ class EvidenceCollector:
             confidence = 0.75
         else:
             claim = "Transaction region matches account's billing/home region — no geographic anomaly."
-            supports_fraud = False
-            confidence = 0.60
+            supports_fraud = None
+            confidence = 0.50
 
         items.append(EvidenceItem(
             evidence_id=self._next_id(),
@@ -593,8 +598,8 @@ class EvidenceCollector:
             confidence = 0.65
         else:
             claim = f"Transaction velocity is normal: {velocity} transactions. No velocity anomaly."
-            supports_fraud = False
-            confidence = 0.65
+            supports_fraud = None
+            confidence = 0.50
 
         items.append(EvidenceItem(
             evidence_id=self._next_id(),

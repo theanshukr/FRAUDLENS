@@ -1,0 +1,169 @@
+{
+  "run_at": "2026-09-23T22:50:41.896912",
+  "total_cases": 20,
+  "fraud_count": 19,
+  "error_count": 0,
+  "total_elapsed_s": 131.4,
+  "results": [
+    {
+      "case_id": "HHG-001",
+      "verdict": "fraud",
+      "fraud_probability": 1.0,
+      "elapsed_s": 8.39,
+      "success": true,
+      "error": null
+    },
+    {
+      "case_id": "HHG-002",
+      "verdict": "fraud",
+      "fraud_probability": 1.0,
+      "elapsed_s": 5.57,
+      "success": true,
+      "error": null
+    },
+    {
+      "case_id": "HHG-003",
+      "verdict": "fraud",
+      "fraud_probability": 1.0,
+      "elapsed_s": 10.01,
+      "success": true,
+      "error": null
+    },
+    {
+      "case_id": "HHG-004",
+      "verdict": "fraud",
+      "fraud_probability": 1.0,
+      "elapsed_s": 5.92,
+      "success": true,
+      "error": null
+    },
+    {
+      "case_id": "HHG-005",
+      "verdict": "fraud",
+      "fraud_probability": 1.0,
+      "elapsed_s": 6.85,
+      "success": true,
+      "error": null
+    },
+    {
+      "case_id": "HHG-006",
+      "verdict": "fraud",
+      "fraud_probability": 1.0,
+      "elapsed_s": 5.95,
+      "success": true,
+      "error": null
+    },
+    {
+      "case_id": "HHG-007",
+      "verdict": "fraud",
+      "fraud_probability": 1.0,
+      "elapsed_s": 5.39,
+      "success": true,
+      "error": null
+    },
+    {
+      "case_id": "HHG-008",
+      "verdict": "fraud",
+      "fraud_probability": 1.0,
+      "elapsed_s": 10.66,
+      "success": true,
+      "error": null
+    },
+    {
+      "case_id": "HHG-009",
+      "verdict": "fraud",
+      "fraud_probability": 1.0,
+      "elapsed_s": 10.31,
+      "success": true,
+      "error": null
+    },
+    {
+      "case_id": "HHG-010",
+      "verdict": "fraud",
+      "fraud_probability": 1.0,
+      "elapsed_s": 5.85,
+      "success": true,
+      "error": null
+    },
+    {
+      "case_id": "HHG-011",
+      "verdict": "fraud",
+      "fraud_probability": 1.0,
+      "elapsed_s": 6.2,
+      "success": true,
+      "error": null
+    },
+    {
+      "case_id": "HHG-012",
+      "verdict": "fraud",
+      "fraud_probability": 1.0,
+      "elapsed_s": 6.04,
+      "success": true,
+      "error": null
+    },
+    {
+      "case_id": "HHG-013",
+      "verdict": "fraud",
+      "fraud_probability": 1.0,
+      "elapsed_s": 5.14,
+      "success": true,
+      "error": null
+    },
+    {
+      "case_id": "HHG-014",
+      "verdict": "uncertain",
+      "fraud_probability": 0.45,
+      "elapsed_s": 4.41,
+      "success": true,
+      "error": null
+    },
+    {
+      "case_id": "HHG-015",
+      "verdict": "fraud",
+      "fraud_probability": 1.0,
+      "elapsed_s": 6.23,
+      "success": true,
+      "error": null
+    },
+    {
+      "case_id": "HHG-016",
+      "verdict": "fraud",
+      "fraud_probability": 1.0,
+      "elapsed_s": 5.03,
+      "success": true,
+      "error": null
+    },
+    {
+      "case_id": "HHG-017",
+      "verdict": "fraud",
+      "fraud_probability": 1.0,
+      "elapsed_s": 5.79,
+      "success": true,
+      "error": null
+    },
+    {
+      "case_id": "HHG-018",
+      "verdict": "fraud",
+      "fraud_probability": 1.0,
+      "elapsed_s": 5.99,
+      "success": true,
+      "error": null
+    },
+    {
+      "case_id": "HHG-019",
+      "verdict": "fraud",
+      "fraud_probability": 1.0,
+      "elapsed_s": 6.49,
+      "success": true,
+      "error": null
+    },
+    {
+      "case_id": "HHG-020",
+      "verdict": "fraud",
+      "fraud_probability": 1.0,
+      "elapsed_s": 5.15,
+      "success": true,
+      "error": null
+    }
+  ]
+}

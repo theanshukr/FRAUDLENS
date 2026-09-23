@@ -67,27 +67,44 @@ export default function Overview() {
 
   useEffect(() => { load(); }, []);
 
-  // Prepare trend data for Recharts
+  // Prepare trend data from REAL cases — no Math.sin/Math.cos synthetic data
   const trendData = useMemo(() => {
-    const hours = timeRange === "24h" ? 8 : timeRange === "7d" ? 7 : 14;
-    return Array.from({ length: hours }, (_, i) => {
-      const label = timeRange === "24h" 
-        ? `${(i * 3).toString().padStart(2, "0")}:00` 
+    if (!cases || cases.length === 0) return [];
+
+    const now = new Date();
+    const buckets = timeRange === "24h" ? 8 : timeRange === "7d" ? 7 : 14;
+    const msPerBucket = timeRange === "24h"
+      ? 3 * 60 * 60 * 1000          // 3-hour buckets
+      : 24 * 60 * 60 * 1000;        // 1-day buckets
+
+    return Array.from({ length: buckets }, (_, i) => {
+      const bucketStart = new Date(now.getTime() - (buckets - i) * msPerBucket);
+      const bucketEnd   = new Date(now.getTime() - (buckets - i - 1) * msPerBucket);
+      const label = timeRange === "24h"
+        ? `${bucketStart.getHours().toString().padStart(2, "0")}:00`
         : `Day ${i + 1}`;
-      
-      const baseRisk = 0.55 + Math.sin(i * 0.8) * 0.18;
-      const volume = Math.round(140 + Math.cos(i * 0.9) * 60 + (i % 2 === 0 ? 30 : -20));
-      const flagged = Math.round(volume * (baseRisk * 0.4));
-      
+
+      // Count real cases that fall within this time bucket
+      const bucketCases = cases.filter((c) => {
+        if (!c.created_at) return false;
+        const t = new Date(c.created_at).getTime();
+        return t >= bucketStart.getTime() && t < bucketEnd.getTime();
+      });
+      const fraudInBucket = bucketCases.filter((c) => c.final_verdict === "fraud").length;
+      const totalInBucket = bucketCases.length;
+      const avgProb = bucketCases.length > 0
+        ? bucketCases.reduce((s, c) => s + (c.fraud_probability || 0), 0) / bucketCases.length
+        : 0;
+
       return {
         label,
-        avgRiskScore: Math.min(0.95, Math.max(0.1, Number(baseRisk.toFixed(2)))),
-        totalTransactions: volume,
-        flaggedSuspicious: flagged,
-        aiAutomatedDecisions: Math.round(flagged * 0.85),
+        avgRiskScore: Number(avgProb.toFixed(2)),
+        totalTransactions: totalInBucket,
+        flaggedSuspicious: fraudInBucket,
+        aiAutomatedDecisions: Math.round(fraudInBucket * 0.85),
       };
     });
-  }, [timeRange]);
+  }, [cases, timeRange]);
 
   // Prepare Donut Chart Data for Patterns
   const pieData = useMemo(() => {
