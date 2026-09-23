@@ -1,15 +1,15 @@
 {
-  "run_at": "2026-09-23T22:50:41.896912",
+  "run_at": "2026-09-24T00:11:52.170726",
   "total_cases": 20,
-  "fraud_count": 19,
+  "fraud_count": 20,
   "error_count": 0,
-  "total_elapsed_s": 131.4,
+  "total_elapsed_s": 187.8,
   "results": [
     {
       "case_id": "HHG-001",
       "verdict": "fraud",
       "fraud_probability": 1.0,
-      "elapsed_s": 8.39,
+      "elapsed_s": 12.36,
       "success": true,
       "error": null
     },
@@ -17,7 +17,7 @@
       "case_id": "HHG-002",
       "verdict": "fraud",
       "fraud_probability": 1.0,
-      "elapsed_s": 5.57,
+      "elapsed_s": 12.35,
       "success": true,
       "error": null
     },
@@ -25,7 +25,7 @@
       "case_id": "HHG-003",
       "verdict": "fraud",
       "fraud_probability": 1.0,
-      "elapsed_s": 10.01,
+      "elapsed_s": 6.67,
       "success": true,
       "error": null
     },
@@ -33,7 +33,7 @@
       "case_id": "HHG-004",
       "verdict": "fraud",
       "fraud_probability": 1.0,
-      "elapsed_s": 5.92,
+      "elapsed_s": 8.93,
       "success": true,
       "error": null
     },
@@ -41,7 +41,7 @@
       "case_id": "HHG-005",
       "verdict": "fraud",
       "fraud_probability": 1.0,
-      "elapsed_s": 6.85,
+      "elapsed_s": 6.29,
       "success": true,
       "error": null
     },
@@ -49,7 +49,7 @@
       "case_id": "HHG-006",
       "verdict": "fraud",
       "fraud_probability": 1.0,
-      "elapsed_s": 5.95,
+      "elapsed_s": 7.1,
       "success": true,
       "error": null
     },
@@ -57,7 +57,7 @@
       "case_id": "HHG-007",
       "verdict": "fraud",
       "fraud_probability": 1.0,
-      "elapsed_s": 5.39,
+      "elapsed_s": 7.68,
       "success": true,
       "error": null
     },
@@ -65,7 +65,7 @@
       "case_id": "HHG-008",
       "verdict": "fraud",
       "fraud_probability": 1.0,
-      "elapsed_s": 10.66,
+      "elapsed_s": 7.66,
       "success": true,
       "error": null
     },
@@ -73,7 +73,7 @@
       "case_id": "HHG-009",
       "verdict": "fraud",
       "fraud_probability": 1.0,
-      "elapsed_s": 10.31,
+      "elapsed_s": 6.88,
       "success": true,
       "error": null
     },
@@ -81,7 +81,7 @@
       "case_id": "HHG-010",
       "verdict": "fraud",
       "fraud_probability": 1.0,
-      "elapsed_s": 5.85,
+      "elapsed_s": 7.94,
       "success": true,
       "error": null
     },
@@ -89,7 +89,7 @@
       "case_id": "HHG-011",
       "verdict": "fraud",
       "fraud_probability": 1.0,
-      "elapsed_s": 6.2,
+      "elapsed_s": 11.52,
       "success": true,
       "error": null
     },
@@ -97,7 +97,7 @@
       "case_id": "HHG-012",
       "verdict": "fraud",
       "fraud_probability": 1.0,
-      "elapsed_s": 6.04,
+      "elapsed_s": 10.51,
       "success": true,
       "error": null
     },
@@ -105,15 +105,15 @@
       "case_id": "HHG-013",
       "verdict": "fraud",
       "fraud_probability": 1.0,
-      "elapsed_s": 5.14,
+      "elapsed_s": 7.83,
       "success": true,
       "error": null
     },
     {
       "case_id": "HHG-014",
-      "verdict": "uncertain",
-      "fraud_probability": 0.45,
-      "elapsed_s": 4.41,
+      "verdict": "fraud",
+      "fraud_probability": 0.853,
+      "elapsed_s": 10.75,
       "success": true,
       "error": null
     },
@@ -121,7 +121,7 @@
       "case_id": "HHG-015",
       "verdict": "fraud",
       "fraud_probability": 1.0,
-      "elapsed_s": 6.23,
+      "elapsed_s": 8.63,
       "success": true,
       "error": null
     },
@@ -129,7 +129,7 @@
       "case_id": "HHG-016",
       "verdict": "fraud",
       "fraud_probability": 1.0,
-      "elapsed_s": 5.03,
+      "elapsed_s": 12.95,
       "success": true,
       "error": null
     },
@@ -137,7 +137,7 @@
       "case_id": "HHG-017",
       "verdict": "fraud",
       "fraud_probability": 1.0,
-      "elapsed_s": 5.79,
+      "elapsed_s": 12.92,
       "success": true,
       "error": null
     },
@@ -145,7 +145,7 @@
       "case_id": "HHG-018",
       "verdict": "fraud",
       "fraud_probability": 1.0,
-      "elapsed_s": 5.99,
+      "elapsed_s": 8.62,
       "success": true,
       "error": null
     },
@@ -153,7 +153,7 @@
       "case_id": "HHG-019",
       "verdict": "fraud",
       "fraud_probability": 1.0,
-      "elapsed_s": 6.49,
+      "elapsed_s": 13.16,
       "success": true,
       "error": null
     },
@@ -161,7 +161,7 @@
       "case_id": "HHG-020",
       "verdict": "fraud",
       "fraud_probability": 1.0,
-      "elapsed_s": 5.15,
+      "elapsed_s": 7.07,
       "success": true,
       "error": null
     }

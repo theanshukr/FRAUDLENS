@@ -116,6 +116,88 @@ Explanation:"""
         fallback = f"Action '{action}' was recommended per policy rule {rule_id} with confidence {confidence:.2f}."
         return self.generate(prompt, fallback=fallback)
 
+    def generate_investigation_reasoning(self, graphrag_context: dict) -> dict:
+        """
+        Generate structured LLM investigation reasoning from unified GraphRAG context.
+        Returns structured dictionary with findings, evidence breakdown, and historical analogies.
+        """
+        import json
+        inv = graphrag_context.get("investigation", {})
+        evidence_list = graphrag_context.get("evidence", [])
+        precedents = graphrag_context.get("historical_precedents", [])
+        signals = graphrag_context.get("graph_signals", {})
+
+        # Deterministic structured fallback
+        fallback_findings = [
+            f"Observed pattern: {inv.get('detected_pattern', 'unknown')} with assessed risk {inv.get('assessed_risk_level', 'UNKNOWN')}.",
+            f"Graph signals indicate ring_size={signals.get('ring_size', 0)}, card_testing={signals.get('card_testing_detected', False)}.",
+        ]
+        fallback_supporting = [e.get("claim", "") for e in evidence_list if e.get("claim")]
+        fallback_hist = [
+            f"Precedent {p.get('case_id')} ({p.get('pattern')}) -> {p.get('outcome')} [Relevance: {p.get('hybrid_relevance', 0.0)}]"
+            for p in precedents[:3]
+        ]
+        fallback_result = {
+            "findings": fallback_findings,
+            "supporting_evidence": fallback_supporting[:4],
+            "contradicting_evidence": [],
+            "historical_context": fallback_hist,
+            "remaining_uncertainty": ["Transaction dispute status requires cardholder confirmation"] if inv.get("trigger_type") in ("customer_report", "analyst_request") else [],
+            "reasoning_summary": f"GraphRAG synthesized {len(evidence_list)} topological evidence items and {len(precedents)} historical analog cases confirming {inv.get('detected_pattern')} pattern.",
+        }
+
+        if not self._model:
+            return fallback_result
+
+        prompt = f"""SYSTEM:
+You are the investigation reasoning assistant for FraudLens.
+You must reason strictly from the supplied GraphRAG context.
+You must distinguish observed evidence, historical analogies, and remaining uncertainty.
+Return your analysis ONLY as valid JSON conforming exactly to this structure:
+{{
+  "findings": ["string"],
+  "supporting_evidence": ["string"],
+  "contradicting_evidence": ["string"],
+  "historical_context": ["string"],
+  "remaining_uncertainty": ["string"],
+  "reasoning_summary": "string"
+}}
+
+USER CONTEXT:
+Current Investigation:
+{json.dumps(inv, indent=2)}
+
+Graph Evidence:
+{json.dumps(evidence_list, indent=2)}
+
+Historical Precedents:
+{json.dumps(precedents, indent=2)}
+
+Graph Topology Signals:
+{json.dumps(signals, indent=2)}
+
+Generate structured JSON reasoning:"""
+
+        try:
+            raw_text = self.generate(prompt, fallback="")
+            if raw_text:
+                # Clean markdown code blocks if returned
+                clean_text = raw_text.strip()
+                if clean_text.startswith("```json"):
+                    clean_text = clean_text[7:]
+                elif clean_text.startswith("```"):
+                    clean_text = clean_text[3:]
+                if clean_text.endswith("```"):
+                    clean_text = clean_text[:-3]
+                parsed = json.loads(clean_text.strip())
+                if isinstance(parsed, dict) and "findings" in parsed:
+                    return parsed
+        except Exception as e:
+            logger.warning(f"GraphRAG LLM reasoning parse error: {e}")
+
+        return fallback_result
+
 
 # Global singleton
 gemini_client = GeminiClient()
+

@@ -6,14 +6,14 @@
   "trigger_type": "customer_report",
   "trigger_risk_score": null,
   "status": "RESOLVED",
-  "created_at": "2026-09-23T17:20:14.225123",
-  "updated_at": "2026-09-23T17:20:17.502057",
+  "created_at": "2026-09-23T18:40:58.537925",
+  "updated_at": "2026-09-23T18:41:04.001869",
   "initial_risk_level": "HIGH",
   "initial_fraud_probability": 0.743,
-  "initial_confidence": 0.82,
+  "initial_confidence": 0.895,
   "final_risk_level": "CRITICAL",
   "final_fraud_probability": 1.0,
-  "final_confidence": 0.937,
+  "final_confidence": 1.0,
   "pattern": "account_takeover",
   "pattern_description": "Attacker gains access to legitimate account and makes unauthorized transactions",
   "evidence": [
@@ -26,9 +26,14 @@
         "3534820"
       ],
       "confidence": 0.4,
-      "timestamp": "2026-09-23T17:20:14.452466",
+      "timestamp": "2026-09-23T18:40:59.465187",
       "raw_data": {
-        "@@results": []
+        "@@results": [
+          "nan_edge 16.0_nan",
+          "hotmail.com",
+          "3534820",
+          "C09988-K1"
+        ]
       },
       "supports_fraud": null
     },
@@ -41,7 +46,7 @@
         "C09988-K1"
       ],
       "confidence": 0.55,
-      "timestamp": "2026-09-23T17:20:14.691228",
+      "timestamp": "2026-09-23T18:40:59.767976",
       "raw_data": {
         "transaction_count": 1,
         "micro_txn_count": 1
@@ -50,14 +55,16 @@
     },
     {
       "evidence_id": "EVD-0003",
-      "claim": "No device neighbors found \u2014 device profile is unique to this transaction.",
+      "claim": "Device profile is used by only 1 card \u2014 no device sharing detected.",
       "source": "graph",
       "ref": "get_device_neighbors",
-      "entity_ids": [],
+      "entity_ids": [
+        "__from_step_01__"
+      ],
       "confidence": 0.5,
-      "timestamp": "2026-09-23T17:20:14.918135",
+      "timestamp": "2026-09-23T18:41:00.067460",
       "raw_data": {
-        "shared_device_count": 0
+        "shared_device_count": 1
       },
       "supports_fraud": null
     },
@@ -70,7 +77,7 @@
         "C09988-K1"
       ],
       "confidence": 0.5,
-      "timestamp": "2026-09-23T17:20:15.152512",
+      "timestamp": "2026-09-23T18:41:00.385260",
       "raw_data": {
         "ring_size": 1,
         "connected_card_ids": []
@@ -86,7 +93,7 @@
         "C09988-K1"
       ],
       "confidence": 0.78,
-      "timestamp": "2026-09-23T17:20:15.402367",
+      "timestamp": "2026-09-23T18:41:00.691866",
       "raw_data": {
         "is_new_device": true
       },
@@ -99,7 +106,7 @@
       "ref": "search_similar_cases",
       "entity_ids": [],
       "confidence": 0.6,
-      "timestamp": "2026-09-23T17:20:15.632391",
+      "timestamp": "2026-09-23T18:41:00.919881",
       "raw_data": {
         "result_count": 1,
         "fraud_case_count": 0
@@ -113,7 +120,7 @@
       "ref": "evidence_request:REQ-001",
       "entity_ids": [],
       "confidence": 0.9,
-      "timestamp": "2026-09-23T17:20:15.866303",
+      "timestamp": "2026-09-23T18:41:01.539923",
       "raw_data": {
         "request_id": "REQ-001",
         "scenario": "deny"
@@ -129,9 +136,14 @@
         "3534820"
       ],
       "confidence": 0.4,
-      "timestamp": "2026-09-23T17:20:16.100099",
+      "timestamp": "2026-09-23T18:41:01.766706",
       "raw_data": {
-        "@@results": []
+        "@@results": [
+          "nan_edge 16.0_nan",
+          "hotmail.com",
+          "3534820",
+          "C09988-K1"
+        ]
       },
       "supports_fraud": null
     },
@@ -144,7 +156,7 @@
         "C09988-K1"
       ],
       "confidence": 0.55,
-      "timestamp": "2026-09-23T17:20:16.328346",
+      "timestamp": "2026-09-23T18:41:02.024431",
       "raw_data": {
         "transaction_count": 1,
         "micro_txn_count": 1
@@ -153,14 +165,16 @@
     },
     {
       "evidence_id": "EVD-0009",
-      "claim": "No device neighbors found \u2014 device profile is unique to this transaction.",
+      "claim": "Device profile is used by only 1 card \u2014 no device sharing detected.",
       "source": "graph",
       "ref": "get_device_neighbors",
-      "entity_ids": [],
+      "entity_ids": [
+        "__from_step_01__"
+      ],
       "confidence": 0.5,
-      "timestamp": "2026-09-23T17:20:16.556767",
+      "timestamp": "2026-09-23T18:41:02.249599",
       "raw_data": {
-        "shared_device_count": 0
+        "shared_device_count": 1
       },
       "supports_fraud": null
     },
@@ -173,7 +187,7 @@
         "C09988-K1"
       ],
       "confidence": 0.5,
-      "timestamp": "2026-09-23T17:20:16.782644",
+      "timestamp": "2026-09-23T18:41:02.984738",
       "raw_data": {
         "ring_size": 1,
         "connected_card_ids": []
@@ -189,7 +203,7 @@
         "C09988-K1"
       ],
       "confidence": 0.78,
-      "timestamp": "2026-09-23T17:20:17.019091",
+      "timestamp": "2026-09-23T18:41:03.216540",
       "raw_data": {
         "is_new_device": true
       },
@@ -202,7 +216,7 @@
       "ref": "search_similar_cases",
       "entity_ids": [],
       "confidence": 0.6,
-      "timestamp": "2026-09-23T17:20:17.252637",
+      "timestamp": "2026-09-23T18:41:03.468937",
       "raw_data": {
         "result_count": 1,
         "fraud_case_count": 0
@@ -297,7 +311,7 @@
       "status": "pending"
     }
   ],
-  "what_changed": "New evidence: 'Historical memory: 1 similar cases found \u2014 mixed outcomes.'\n\nRisk changed: HIGH \u2192 CRITICAL\nFraud probability: 74% \u2192 100% (\u219126%)\nConfidence: 82% \u2192 94% (\u219112%)\n\nNew actions required: BLOCK_TRANSACTION",
+  "what_changed": "New evidence: 'Historical memory: 1 similar cases found \u2014 mixed outcomes.'\n\nRisk changed: HIGH \u2192 CRITICAL\nFraud probability: 74% \u2192 100% (\u219126%)\nConfidence: 90% \u2192 100% (\u219110%)\n\nNew actions required: BLOCK_TRANSACTION",
   "final_verdict": "fraud",
   "exposure_usd": 0.0,
   "sar": {
@@ -312,87 +326,370 @@
     {
       "event_type": "CASE_CREATED",
       "description": "Investigation triggered by customer_report",
-      "timestamp": "2026-09-23T17:20:14.225123",
+      "timestamp": "2026-09-23T18:40:58.537925",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:TRIGGERED   INVESTIGATING",
       "description": "Building investigation plan",
-      "timestamp": "2026-09-23T17:20:14.225675",
+      "timestamp": "2026-09-23T18:40:58.538442",
       "metadata": {}
     },
     {
       "event_type": "INITIAL_ASSESSMENT",
       "description": "Initial risk: HIGH (74% probability)",
-      "timestamp": "2026-09-23T17:20:15.865791",
+      "timestamp": "2026-09-23T18:41:01.538286",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:INVESTIGATING   AWAITING_EVIDENCE",
       "description": "Requesting additional evidence",
-      "timestamp": "2026-09-23T17:20:15.865791",
+      "timestamp": "2026-09-23T18:41:01.538286",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:AWAITING_EVIDENCE   REASSESSING",
       "description": "New evidence received \u2014 reassessing",
-      "timestamp": "2026-09-23T17:20:15.866303",
+      "timestamp": "2026-09-23T18:41:01.539923",
       "metadata": {}
     },
     {
       "event_type": "FINAL_ASSESSMENT",
       "description": "Final risk: CRITICAL (100% probability)",
-      "timestamp": "2026-09-23T17:20:17.500944",
+      "timestamp": "2026-09-23T18:41:04.000205",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:REASSESSING   ACTION_RECOMMENDED",
       "description": "Generating Next-Best-Action",
-      "timestamp": "2026-09-23T17:20:17.500944",
+      "timestamp": "2026-09-23T18:41:04.000760",
       "metadata": {}
     },
     {
       "event_type": "NBA_INITIAL",
       "description": "NBA generated: ['MONITOR_ACCOUNT', 'CREATE_CASE', 'BLOCK_CARD', 'WARN_CUSTOMER']",
-      "timestamp": "2026-09-23T17:20:17.502057",
+      "timestamp": "2026-09-23T18:41:04.001318",
       "metadata": {}
     },
     {
       "event_type": "NBA_FINAL",
       "description": "NBA generated: ['BLOCK_CARD', 'BLOCK_TRANSACTION', 'MONITOR_ACCOUNT', 'CREATE_CASE', 'WARN_CUSTOMER']",
-      "timestamp": "2026-09-23T17:20:17.502057",
+      "timestamp": "2026-09-23T18:41:04.001318",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:ACTION_RECOMMENDED   AWAITING_APPROVAL",
       "description": "Awaiting L1 analyst approval",
-      "timestamp": "2026-09-23T17:20:17.502057",
+      "timestamp": "2026-09-23T18:41:04.001869",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:AWAITING_APPROVAL   RESOLVED",
       "description": "Case resolved: FRAUD",
-      "timestamp": "2026-09-23T17:20:17.502057",
+      "timestamp": "2026-09-23T18:41:04.001869",
       "metadata": {}
     }
   ],
   "similar_cases": [
     {
-      "case_id": "",
-      "similarity_score": 0.0,
+      "case_id": "CC-3477",
+      "similarity_score": 0.526,
       "similarity_reasons": [
-        "Graph pattern match"
+        "Semantic vector similarity on case narrative"
       ],
-      "pattern": "unknown",
-      "outcome": "unknown",
+      "pattern": "account_takeover",
+      "outcome": "confirmed_fraud",
       "actions_taken": [
-        ""
+        "CREATE_CASE",
+        "BLOCK_CARD"
       ],
-      "analyst_notes_excerpt": ""
+      "analyst_notes_excerpt": "Case CC-3477: cardholder C01910 reported unrecognized activity on card C01910-K1. 4 transaction(s) between 2016-09-13 and 2016-09-13 totaling $468.13 were confirmed fraudulent. Mixed-channel activity ",
+      "retrieval_type": "semantic",
+      "graph_score": 0.0,
+      "semantic_score": 0.7019,
+      "hybrid_score": 0.526,
+      "source": "VectorStore / analyst_notes embedding"
+    },
+    {
+      "case_id": "CC-4846",
+      "similarity_score": 0.52,
+      "similarity_reasons": [
+        "Semantic vector similarity on case narrative"
+      ],
+      "pattern": "card_not_present_fraud",
+      "outcome": "confirmed_fraud",
+      "actions_taken": [
+        "CREATE_CASE",
+        "BLOCK_CARD"
+      ],
+      "analyst_notes_excerpt": "Case CC-4846: cardholder C11844 reported unrecognized activity on card C11844-K2. 1 transaction(s) between 2016-10-13 and 2016-10-13 totaling $13.29 were confirmed fraudulent. Online purchases inconsi",
+      "retrieval_type": "semantic",
+      "graph_score": 0.0,
+      "semantic_score": 0.6936,
+      "hybrid_score": 0.52,
+      "source": "VectorStore / analyst_notes embedding"
+    },
+    {
+      "case_id": "CC-4838",
+      "similarity_score": 0.516,
+      "similarity_reasons": [
+        "Semantic vector similarity on case narrative"
+      ],
+      "pattern": "account_takeover",
+      "outcome": "confirmed_fraud",
+      "actions_taken": [
+        "CREATE_CASE",
+        "BLOCK_CARD"
+      ],
+      "analyst_notes_excerpt": "Case CC-4838: cardholder C12885 reported unrecognized activity on card C12885-K1. 3 transaction(s) between 2016-10-13 and 2016-10-14 totaling $840.13 were confirmed fraudulent. Mixed-channel activity ",
+      "retrieval_type": "semantic",
+      "graph_score": 0.0,
+      "semantic_score": 0.6878,
+      "hybrid_score": 0.516,
+      "source": "VectorStore / analyst_notes embedding"
+    },
+    {
+      "case_id": "CC-4086",
+      "similarity_score": 0.511,
+      "similarity_reasons": [
+        "Semantic vector similarity on case narrative"
+      ],
+      "pattern": "undocumented",
+      "outcome": "confirmed_fraud",
+      "actions_taken": [
+        "CREATE_CASE",
+        "BLOCK_CARD",
+        "FILE_REPORT"
+      ],
+      "analyst_notes_excerpt": "Case CC-4086: cardholder C13269 reported four online purchases within forty minutes, each just under $500, none of which they made. Amounts appear chosen to stay under a $500 authorization threshold. ",
+      "retrieval_type": "semantic",
+      "graph_score": 0.0,
+      "semantic_score": 0.6813,
+      "hybrid_score": 0.511,
+      "source": "VectorStore / analyst_notes embedding"
+    },
+    {
+      "case_id": "CC-3471",
+      "similarity_score": 0.505,
+      "similarity_reasons": [
+        "Semantic vector similarity on case narrative"
+      ],
+      "pattern": "card_not_present_new_device",
+      "outcome": "confirmed_fraud",
+      "actions_taken": [
+        "CREATE_CASE",
+        "BLOCK_CARD"
+      ],
+      "analyst_notes_excerpt": "Case CC-3471: cardholder C06988 reported unrecognized activity on card C06988-K1. 5 transaction(s) between 2016-09-13 and 2016-09-13 totaling $433.88 were confirmed fraudulent. Online purchases from a",
+      "retrieval_type": "semantic",
+      "graph_score": 0.0,
+      "semantic_score": 0.6727,
+      "hybrid_score": 0.505,
+      "source": "VectorStore / analyst_notes embedding"
     }
   ],
+  "graphrag_context": {
+    "investigation": {
+      "case_id": "HHG-016",
+      "txn_id": "3534820",
+      "trigger_type": "customer_report",
+      "assessed_risk_level": "CRITICAL",
+      "fraud_probability": 1.0,
+      "detected_pattern": "account_takeover"
+    },
+    "graph_signals": {
+      "shared_device_count": 1,
+      "card_testing_detected": false,
+      "ring_size": 1,
+      "is_new_device": true,
+      "velocity_count": 0
+    },
+    "evidence": [
+      {
+        "claim": "Transaction retrieved \u2014 amount $0.00 via . Risk score unavailable.",
+        "source": "TigerGraph / get_transaction",
+        "confidence": 0.4
+      },
+      {
+        "claim": "Card history retrieved: 1 transactions. No anomalous pattern detected.",
+        "source": "TigerGraph / get_card_history",
+        "confidence": 0.55
+      },
+      {
+        "claim": "Device profile is used by only 1 card \u2014 no device sharing detected.",
+        "source": "TigerGraph / get_device_neighbors",
+        "confidence": 0.5
+      },
+      {
+        "claim": "No connected cards found via device graph \u2014 this card appears isolated.",
+        "source": "TigerGraph / find_connected_cards",
+        "confidence": 0.5
+      },
+      {
+        "claim": "Transaction originated from a new/unrecognized device \u2014 no prior transaction history from this device profile. Account takeover signal.",
+        "source": "TigerGraph / detect_new_device_usage",
+        "confidence": 0.78
+      },
+      {
+        "claim": "Historical memory: 1 similar cases found \u2014 mixed outcomes.",
+        "source": "document",
+        "confidence": 0.6
+      },
+      {
+        "claim": "Customer explicitly denied making this transaction. States card was in their possession.",
+        "source": "customer",
+        "confidence": 0.9
+      },
+      {
+        "claim": "Transaction retrieved \u2014 amount $0.00 via . Risk score unavailable.",
+        "source": "TigerGraph / get_transaction",
+        "confidence": 0.4
+      },
+      {
+        "claim": "Card history retrieved: 1 transactions. No anomalous pattern detected.",
+        "source": "TigerGraph / get_card_history",
+        "confidence": 0.55
+      },
+      {
+        "claim": "Device profile is used by only 1 card \u2014 no device sharing detected.",
+        "source": "TigerGraph / get_device_neighbors",
+        "confidence": 0.5
+      },
+      {
+        "claim": "No connected cards found via device graph \u2014 this card appears isolated.",
+        "source": "TigerGraph / find_connected_cards",
+        "confidence": 0.5
+      },
+      {
+        "claim": "Transaction originated from a new/unrecognized device \u2014 no prior transaction history from this device profile. Account takeover signal.",
+        "source": "TigerGraph / detect_new_device_usage",
+        "confidence": 0.78
+      },
+      {
+        "claim": "Historical memory: 1 similar cases found \u2014 mixed outcomes.",
+        "source": "document",
+        "confidence": 0.6
+      }
+    ],
+    "historical_precedents": [
+      {
+        "case_id": "CC-3477",
+        "retrieval_type": "semantic",
+        "hybrid_relevance": 0.526,
+        "graph_relevance": 0.0,
+        "semantic_relevance": 0.7019,
+        "pattern": "account_takeover",
+        "outcome": "confirmed_fraud",
+        "actions_taken": [
+          "CREATE_CASE",
+          "BLOCK_CARD"
+        ],
+        "why_relevant": [
+          "Semantic vector similarity on case narrative"
+        ],
+        "analyst_notes": ""
+      },
+      {
+        "case_id": "CC-4846",
+        "retrieval_type": "semantic",
+        "hybrid_relevance": 0.52,
+        "graph_relevance": 0.0,
+        "semantic_relevance": 0.6936,
+        "pattern": "card_not_present_fraud",
+        "outcome": "confirmed_fraud",
+        "actions_taken": [
+          "CREATE_CASE",
+          "BLOCK_CARD"
+        ],
+        "why_relevant": [
+          "Semantic vector similarity on case narrative"
+        ],
+        "analyst_notes": ""
+      },
+      {
+        "case_id": "CC-4838",
+        "retrieval_type": "semantic",
+        "hybrid_relevance": 0.516,
+        "graph_relevance": 0.0,
+        "semantic_relevance": 0.6878,
+        "pattern": "account_takeover",
+        "outcome": "confirmed_fraud",
+        "actions_taken": [
+          "CREATE_CASE",
+          "BLOCK_CARD"
+        ],
+        "why_relevant": [
+          "Semantic vector similarity on case narrative"
+        ],
+        "analyst_notes": ""
+      },
+      {
+        "case_id": "CC-4086",
+        "retrieval_type": "semantic",
+        "hybrid_relevance": 0.511,
+        "graph_relevance": 0.0,
+        "semantic_relevance": 0.6813,
+        "pattern": "undocumented",
+        "outcome": "confirmed_fraud",
+        "actions_taken": [
+          "CREATE_CASE",
+          "BLOCK_CARD",
+          "FILE_REPORT"
+        ],
+        "why_relevant": [
+          "Semantic vector similarity on case narrative"
+        ],
+        "analyst_notes": ""
+      },
+      {
+        "case_id": "CC-3471",
+        "retrieval_type": "semantic",
+        "hybrid_relevance": 0.505,
+        "graph_relevance": 0.0,
+        "semantic_relevance": 0.6727,
+        "pattern": "card_not_present_new_device",
+        "outcome": "confirmed_fraud",
+        "actions_taken": [
+          "CREATE_CASE",
+          "BLOCK_CARD"
+        ],
+        "why_relevant": [
+          "Semantic vector similarity on case narrative"
+        ],
+        "analyst_notes": ""
+      }
+    ],
+    "provenance": {
+      "graph_source": "TigerGraph Cloud (FraudLens)",
+      "vector_source": "FraudLens VectorStore (TF-IDF / Embedding-001)",
+      "fusion_method": "Weighted Bimodal Hybrid RAG"
+    }
+  },
+  "llm_reasoning": {
+    "findings": [
+      "Observed pattern: account_takeover with assessed risk CRITICAL.",
+      "Graph signals indicate ring_size=1, card_testing=False."
+    ],
+    "supporting_evidence": [
+      "Transaction retrieved \u2014 amount $0.00 via . Risk score unavailable.",
+      "Card history retrieved: 1 transactions. No anomalous pattern detected.",
+      "Device profile is used by only 1 card \u2014 no device sharing detected.",
+      "No connected cards found via device graph \u2014 this card appears isolated."
+    ],
+    "contradicting_evidence": [],
+    "historical_context": [
+      "Precedent CC-3477 (account_takeover) -> confirmed_fraud [Relevance: 0.526]",
+      "Precedent CC-4846 (card_not_present_fraud) -> confirmed_fraud [Relevance: 0.52]",
+      "Precedent CC-4838 (account_takeover) -> confirmed_fraud [Relevance: 0.516]"
+    ],
+    "remaining_uncertainty": [
+      "Transaction dispute status requires cardholder confirmation"
+    ],
+    "reasoning_summary": "GraphRAG synthesized 13 topological evidence items and 5 historical analog cases confirming account_takeover pattern."
+  },
   "tool_calls": [],
   "investigation_rounds": 1,
+  "written_to_graph": true,
   "case": {
     "status": "closed_fraud",
     "verdict": "fraud",
@@ -426,10 +723,12 @@
         ]
       },
       {
-        "claim": "No device neighbors found \u2014 device profile is unique to this transaction.",
+        "claim": "Device profile is used by only 1 card \u2014 no device sharing detected.",
         "source": "graph",
         "ref": "get_device_neighbors",
-        "entity_ids": []
+        "entity_ids": [
+          "__from_step_01__"
+        ]
       },
       {
         "claim": "No connected cards found via device graph \u2014 this card appears isolated.",
@@ -476,10 +775,12 @@
         ]
       },
       {
-        "claim": "No device neighbors found \u2014 device profile is unique to this transaction.",
+        "claim": "Device profile is used by only 1 card \u2014 no device sharing detected.",
         "source": "graph",
         "ref": "get_device_neighbors",
-        "entity_ids": []
+        "entity_ids": [
+          "__from_step_01__"
+        ]
       },
       {
         "claim": "No connected cards found via device graph \u2014 this card appears isolated.",
@@ -504,7 +805,13 @@
         "entity_ids": []
       }
     ],
-    "similar_prior_cases": [],
+    "similar_prior_cases": [
+      "CC-3477",
+      "CC-4846",
+      "CC-4838",
+      "CC-4086",
+      "CC-3471"
+    ],
     "summary": "Investigation for case HHG-016 (Txn: 3534820) detected account_takeover pattern with 100.0% fraud probability based on 13 collected graph signals.",
     "written_to_graph": true,
     "graph_case_id": "HHG-016"
@@ -570,5 +877,5 @@
   ],
   "stop_reason": "Defensible decision reached with conclusive graph evidence",
   "tokens": 0,
-  "latency_s": 3.28
+  "latency_s": 5.46
 }

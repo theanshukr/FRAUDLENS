@@ -100,6 +100,10 @@ class InvestigationState:
         # Accumulated signals from all evidence collection rounds
         self.accumulated_signals: dict = {}
 
+        # GraphRAG & LLM Reasoning
+        self.graphrag_context: Optional[dict] = None
+        self.llm_reasoning:    Optional[dict] = None
+
         # NBA
         self.initial_actions: list[ActionRecommendation] = []
         self.final_actions:   list[ActionRecommendation] = []
@@ -241,13 +245,14 @@ class Orchestrator:
                 evidence_count=len(state.evidence),
             )
 
-            # --- Similar Cases ---
-            yield self._event("step", "Retrieving similar historical cases", step="retrieve_similar_cases")
+            # --- Similar Cases (GraphRAG Hybrid Retrieval) ---
+            yield self._event("step", "Executing GraphRAG hybrid retrieval (TigerGraph + VectorStore)", step="retrieve_similar_cases")
             device_id = state.accumulated_signals.get("device_profile_id") or None
             similar = await self.memory.retrieve(
                 pattern=state.plan.hypothesis,
                 device_profile_id=device_id,
                 card_ids=[card_id] if card_id else [],
+                query_context=f"Investigation for {trigger_type} with pattern {state.plan.hypothesis} and {len(state.evidence)} graph signals",
             )
             state.similar_cases = [
                 {
@@ -258,13 +263,18 @@ class Orchestrator:
                     "outcome":             c.outcome,
                     "actions_taken":       c.actions_taken,
                     "analyst_notes_excerpt": c.analyst_notes_excerpt,
+                    "retrieval_type":      getattr(c, "retrieval_type", "graph"),
+                    "graph_score":         getattr(c, "graph_score", 0.0),
+                    "semantic_score":      getattr(c, "semantic_score", 0.0),
+                    "hybrid_score":        getattr(c, "hybrid_score", c.similarity_score),
+                    "source":              getattr(c, "source", "TigerGraph / search_similar_cases"),
                 }
                 for c in similar
             ]
             self.case_manager.set_similar_cases(case, state.similar_cases)
             yield self._event(
                 "step",
-                f"{len(similar)} similar historical cases found",
+                f"GraphRAG fused {len(similar)} historical cases (hybrid relevance)",
                 step="retrieve_similar_cases",
                 status="done",
             )
@@ -286,6 +296,40 @@ class Orchestrator:
                 confidence=assessment.confidence,
                 pattern=assessment.pattern,
             )
+
+            # --- GraphRAG Context Synthesis & LLM Reasoning Layer ---
+            try:
+                from tools.graphrag_tools import build_graphrag_context
+                from agent.llm_client import gemini_client
+
+                ctx = build_graphrag_context(
+                    case_id=case.case_id,
+                    txn_id=txn_id,
+                    trigger_type=trigger_type,
+                    graph_evidence=state.evidence,
+                    historical_cases=state.similar_cases,
+                    extracted_signals=state.accumulated_signals,
+                    fraud_probability=assessment.fraud_probability,
+                    risk_level=assessment.risk_level,
+                    pattern=assessment.pattern,
+                )
+                state.graphrag_context = ctx
+                case.graphrag_context = ctx
+                reasoning = gemini_client.generate_investigation_reasoning(ctx)
+                state.llm_reasoning = reasoning
+                case.llm_reasoning = reasoning
+
+                yield self._event(
+                    "graphrag_reasoning",
+                    f"GraphRAG Reasoning Layer synthesized findings ({len(reasoning.get('findings', []))} points)",
+                    reasoning_summary=reasoning.get("reasoning_summary", ""),
+                    findings=reasoning.get("findings", []),
+                    supporting_evidence=reasoning.get("supporting_evidence", []),
+                    historical_analogies=reasoning.get("historical_context", []),
+                    remaining_uncertainty=reasoning.get("remaining_uncertainty", []),
+                )
+            except Exception as e:
+                logger.warning(f"GraphRAG reasoning layer skipped/degraded: {e}")
 
             # Store initial assessment on first round
             if state.initial_assessment is None:

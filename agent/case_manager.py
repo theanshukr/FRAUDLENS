@@ -105,12 +105,15 @@ class FraudCaseRecord(BaseModel):
     # Timeline
     timeline: list[TimelineEvent] = Field(default_factory=list)
 
-    # Similar Cases
+    # Similar Cases & GraphRAG
     similar_cases: list[dict] = Field(default_factory=list)
+    graphrag_context: Optional[dict] = None
+    llm_reasoning: Optional[dict] = None
 
-    # Agent
+    # Agent & Graph
     tool_calls: list[dict] = Field(default_factory=list)
     investigation_rounds: int = 0
+    written_to_graph: bool = False
 
 
 # ============================================================
@@ -250,9 +253,10 @@ class CaseManager:
         return output_path
 
     async def write_to_graph(self, case: FraudCaseRecord) -> bool:
-        """Write case to TigerGraph via write_case query."""
+        """Write case to TigerGraph via write_case query and verify with read-after-write."""
         if self.tg_client is None:
             logger.warning("No TigerGraph client — skipping graph write (dev mode)")
+            case.written_to_graph = False
             return False
         try:
             from tools import graph_tools as gt
@@ -270,13 +274,24 @@ class CaseManager:
                 "case_json": json.dumps(self.to_answer_json(case), default=str),
             }
             result = gt.write_case(self.tg_client, case_data)
-            if result.get("success"):
-                logger.info(f"Case {case.case_id} written to TigerGraph")
-            else:
+            if not result.get("success"):
                 logger.warning(f"write_case returned non-success: {result.get('error')}")
-            return result.get("success", False)
+                case.written_to_graph = False
+                return False
+
+            # Read-after-write verification
+            verify_res = gt.verify_case_writeback(self.tg_client, case.case_id)
+            if verify_res.get("verified"):
+                case.written_to_graph = True
+                logger.info(f"Case {case.case_id} written to TigerGraph and verified by read-after-write")
+                return True
+            else:
+                logger.warning(f"Case {case.case_id} writeback verification failed: {verify_res.get('reason')}")
+                case.written_to_graph = False
+                return False
         except Exception as e:
             logger.error(f"Failed to write case to graph: {e}")
+            case.written_to_graph = False
             return False
 
     def to_answer_json(self, case: FraudCaseRecord) -> dict:
