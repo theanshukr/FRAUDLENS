@@ -4,7 +4,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { getCases, getGraph, expandGraph, CaseSummary, GraphResponse, GraphNode, GraphEdge } from "@/lib/api";
 import { Badge, cn } from "@/components/ui";
 import { 
@@ -33,7 +33,11 @@ import {
   Radio,
   ExternalLink,
   ShieldAlert,
-  Server
+  Server,
+  Maximize2,
+  Minimize2,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import ReactFlow, { 
   Background, 
@@ -356,6 +360,31 @@ export default function GraphPage() {
   const [hops, setHops] = useState<number>(1);
   const [filterType, setFilterType] = useState<string>("ALL");
   const [activeRelFilters, setActiveRelFilters] = useState<Set<string>>(new Set());
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [hideSidebar, setHideSidebar] = useState(false);
+  const graphContainerRef = useRef<HTMLDivElement>(null);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      if (graphContainerRef.current?.requestFullscreen) {
+        graphContainerRef.current.requestFullscreen().catch(() => {});
+      }
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
   
   // Cache to store graph data per case + hop level
   const [graphCache, setGraphCache] = useState<Record<string, GraphResponse>>({});
@@ -595,69 +624,97 @@ export default function GraphPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden bg-slate-50 text-slate-900">
+    <div 
+      ref={graphContainerRef} 
+      className={cn(
+        "flex w-full overflow-hidden bg-slate-50 text-slate-900 transition-all",
+        isFullscreen ? "fixed inset-0 z-50 h-screen w-screen" : "h-[calc(100vh-4rem)]"
+      )}
+    >
       {/* Sidebar: Case Selector (Light Theme) */}
-      <div className="w-80 border-r border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-sm relative">
-        <div className="p-4 border-b border-slate-200 shrink-0">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs font-mono font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-              <Network className="w-3.5 h-3.5 text-blue-600" />
-              Investigation Cases
-            </h2>
-            <span className="text-[10px] font-mono px-2 py-0.5 bg-blue-50 text-blue-700 font-bold border border-blue-200 rounded-full">
-              {filteredCases.length} Cases
-            </span>
-          </div>
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search Case ID, card, customer..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono"
-            />
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto p-2 space-y-1">
-          {loadingCases ? (
-            <div className="p-4 space-y-2 animate-pulse">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-12 bg-slate-100 rounded-lg w-full"></div>
-              ))}
-            </div>
-          ) : filteredCases.length > 0 ? (
-            filteredCases.map((c) => (
-              <button
-                key={c.case_id}
-                onClick={() => setSelectedCase(c.case_id)}
-                className={cn(
-                  "w-full text-left p-3 rounded-lg transition-all flex items-center justify-between group",
-                  selectedCase === c.case_id 
-                    ? "bg-blue-50 border border-blue-300 text-blue-900 shadow-sm" 
-                    : "hover:bg-slate-50 text-slate-700 border border-transparent"
-                )}
-              >
-                <div className="overflow-hidden mr-2">
-                  <span className="font-mono text-xs font-bold block truncate">{c.case_id}</span>
-                  <span className="text-[10px] font-mono text-slate-500 block truncate mt-0.5">
-                    {c.pattern?.replace(/_/g, " ") || c.trigger_type?.replace(/_/g, " ") || "Risk Trigger"}
-                  </span>
-                </div>
-                <span className={cn(
-                  "text-[9px] font-mono uppercase font-bold tracking-wider px-2 py-0.5 rounded shrink-0",
-                  c.final_risk_level === "HIGH" || c.final_risk_level === "CRITICAL" ? "bg-rose-100 text-rose-700 border border-rose-200" : 
-                  "bg-slate-100 text-slate-600 border border-slate-200"
-                )}>
-                  {c.final_risk_level || "HIGH"}
+      {!hideSidebar ? (
+        <div className="w-80 border-r border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-sm relative transition-all">
+          <div className="p-4 border-b border-slate-200 shrink-0">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xs font-mono font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <Network className="w-3.5 h-3.5 text-blue-600" />
+                Investigation Cases
+              </h2>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-mono px-2 py-0.5 bg-blue-50 text-blue-700 font-bold border border-blue-200 rounded-full">
+                  {filteredCases.length}
                 </span>
-              </button>
-            ))
-          ) : (
-            <div className="p-4 text-center text-xs text-slate-500 font-mono">No cases found.</div>
-          )}
+                <button
+                  onClick={() => setHideSidebar(true)}
+                  className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+                  title="Collapse Cases Panel"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search Case ID, card, customer..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono"
+              />
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            {loadingCases ? (
+              <div className="p-4 space-y-2 animate-pulse">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-12 bg-slate-100 rounded-lg w-full"></div>
+                ))}
+              </div>
+            ) : filteredCases.length > 0 ? (
+              filteredCases.map((c) => (
+                <button
+                  key={c.case_id}
+                  onClick={() => setSelectedCase(c.case_id)}
+                  className={cn(
+                    "w-full text-left p-3 rounded-lg transition-all flex items-center justify-between group",
+                    selectedCase === c.case_id 
+                      ? "bg-blue-50 border border-blue-300 text-blue-900 shadow-sm" 
+                      : "hover:bg-slate-50 text-slate-700 border border-transparent"
+                  )}
+                >
+                  <div className="overflow-hidden mr-2">
+                    <span className="font-mono text-xs font-bold block truncate">{c.case_id}</span>
+                    <span className="text-[10px] font-mono text-slate-500 block truncate mt-0.5">
+                      {c.pattern?.replace(/_/g, " ") || c.trigger_type?.replace(/_/g, " ") || "Risk Trigger"}
+                    </span>
+                  </div>
+                  <span className={cn(
+                    "text-[9px] font-mono uppercase font-bold tracking-wider px-2 py-0.5 rounded shrink-0",
+                    c.final_risk_level === "HIGH" || c.final_risk_level === "CRITICAL" ? "bg-rose-100 text-rose-700 border border-rose-200" : 
+                    "bg-slate-100 text-slate-600 border border-slate-200"
+                  )}>
+                    {c.final_risk_level || "HIGH"}
+                  </span>
+                </button>
+              ))
+            ) : (
+              <div className="p-4 text-center text-xs text-slate-500 font-mono">No cases found.</div>
+            )}
+          </div>
         </div>
-      </div>
+      ) : (
+        <button
+          onClick={() => setHideSidebar(false)}
+          className="w-8 border-r border-slate-200 bg-white hover:bg-blue-50 flex flex-col items-center justify-center gap-2 text-slate-500 hover:text-blue-600 transition-colors z-20 shadow-sm"
+          title="Expand Cases Panel"
+        >
+          <ChevronRight className="w-4 h-4" />
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider [writing-mode:vertical-lr] rotate-180">
+            Cases ({filteredCases.length})
+          </span>
+        </button>
+      )}
 
       {/* Main: Graph Display */}
       <div className="flex-1 bg-slate-50 flex flex-col overflow-hidden relative">
@@ -715,6 +772,30 @@ export default function GraphPage() {
                 <RefreshCw className={cn("w-4 h-4", loadingGraph && "animate-spin text-blue-600")} />
               </button>
             )}
+
+            {/* Fullscreen Toggle Button */}
+            <button
+              onClick={toggleFullscreen}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 border shadow-sm",
+                isFullscreen
+                  ? "bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100"
+                  : "bg-white text-slate-700 hover:text-blue-600 hover:bg-slate-50 border-slate-200"
+              )}
+              title={isFullscreen ? "Exit Fullscreen (Esc)" : "Expand Graph to Fullscreen"}
+            >
+              {isFullscreen ? (
+                <>
+                  <Minimize2 className="w-3.5 h-3.5 text-rose-600" />
+                  Exit Fullscreen
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="w-3.5 h-3.5 text-blue-600" />
+                  Full Screen
+                </>
+              )}
+            </button>
           </div>
         </div>
 

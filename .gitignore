@@ -1,12 +1,26 @@
 # ============================================================
-# FraudLens — .gitignore
+# FraudLens — .gitignore (Production & Hackathon Grade)
 # ============================================================
 
-# --- Secrets & Environment ---
+# --- Secrets & Environment Variables ---
 .env
 *.env
 .env.local
-.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# --- All Data & CSV Files (Strictly Ignored) ---
+*.csv
+**/*.csv
+data/
+dataset/
+dataset_sample/
+docs/databasefiles/
+*.parquet
+*.feather
+*.sqlite3
+*.db
 
 # --- Python ---
 __pycache__/
@@ -38,16 +52,13 @@ ENV/
 env.bak/
 venv.bak/
 
-# --- Data Files (large CSVs — never commit) ---
-data/
-!data/.gitkeep
-docs/databasefiles/
-
-# --- Node / Frontend ---
+# --- Node.js & Frontend ---
+frontend/node_modules/
 node_modules/
+frontend/.next/
 .next/
 out/
-dist/
+frontend/out/
 .nuxt/
 .cache/
 npm-debug.log*
@@ -55,7 +66,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# --- IDE / Editor ---
+# --- IDE & Editors ---
 .idea/
 .vscode/
 *.swp
@@ -63,29 +74,19 @@ yarn-error.log*
 *~
 .DS_Store
 Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.AppleDouble
+.LSOverride
 
-# --- Logs ---
+# --- Logs & Runtime Artifacts ---
 *.log
 logs/
 *.log.*
 
-# --- TigerGraph / GSQL ---
-# (Compiled query artifacts)
+# --- TigerGraph & GSQL Artifacts ---
 *.tar.gz
 
-# --- Output / Cases ---
-# Uncommit cases/ to track benchmark outputs
-# cases/
-
-# --- Jupyter ---
+# --- Jupyter Notebooks ---
 .ipynb_checkpoints/
 *.ipynb
-
-# --- OS ---
-.DS_Store
-.AppleDouble
-.LSOverride
-Desktop.ini
-$RECYCLE.BIN/
-
-dataset/

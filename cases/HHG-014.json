@@ -5,7 +5,7 @@
   "customer_id": "C13487",
   "trigger_type": "analyst_request",
   "trigger_risk_score": null,
-  "status": "RESOLVED",
+  "status": "ACTION_TAKEN",
   "created_at": "2026-09-23T18:40:39.117082",
   "updated_at": "2026-09-23T18:40:47.305690",
   "initial_risk_level": "MEDIUM",
@@ -367,7 +367,10 @@
       "policy_rule": "R1",
       "priority": 1,
       "is_mandatory": true,
-      "status": "pending"
+      "status": "approved",
+      "approved_by": "Analyst",
+      "approved_at": "2026-09-24T13:11:37.251523+00:00",
+      "notes": null
     },
     {
       "action": "BLOCK_TRANSACTION",
@@ -495,6 +498,12 @@
       "description": "Case resolved: FRAUD",
       "timestamp": "2026-09-23T18:40:47.305690",
       "metadata": {}
+    },
+    {
+      "event_type": "action_approved",
+      "description": "Action 'BLOCK_CARD' approved by Analyst",
+      "timestamp": "2026-09-24T13:11:37.251523+00:00",
+      "actor": "Analyst"
     }
   ],
   "similar_cases": [
