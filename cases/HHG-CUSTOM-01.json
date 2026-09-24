@@ -5,7 +5,7 @@
   "customer_id": null,
   "trigger_type": "risk_score",
   "trigger_risk_score": null,
-  "status": "RESOLVED",
+  "status": "ACTION_TAKEN",
   "created_at": "2026-09-23T20:38:06.617263",
   "updated_at": "2026-09-23T20:38:09.150431",
   "initial_risk_level": "HIGH",
@@ -216,7 +216,10 @@
       "policy_rule": "R3",
       "priority": 3,
       "is_mandatory": true,
-      "status": "pending"
+      "status": "approved",
+      "approved_by": "Analyst",
+      "approved_at": "2026-09-24T10:58:52.458237+00:00",
+      "notes": null
     },
     {
       "action": "CREATE_CASE",
@@ -314,6 +317,60 @@
       "description": "Case resolved: FRAUD",
       "timestamp": "2026-09-23T20:38:09.150431",
       "metadata": {}
+    },
+    {
+      "event_type": "action_approved",
+      "description": "Action 'MONITOR_ACCOUNT' approved by Analyst",
+      "timestamp": "2026-09-24T10:58:47.168371+00:00",
+      "actor": "Analyst"
+    },
+    {
+      "event_type": "action_approved",
+      "description": "Action 'MONITOR_ACCOUNT' approved by Analyst",
+      "timestamp": "2026-09-24T10:58:47.319661+00:00",
+      "actor": "Analyst"
+    },
+    {
+      "event_type": "action_approved",
+      "description": "Action 'MONITOR_ACCOUNT' approved by Analyst",
+      "timestamp": "2026-09-24T10:58:47.355100+00:00",
+      "actor": "Analyst"
+    },
+    {
+      "event_type": "action_approved",
+      "description": "Action 'MONITOR_ACCOUNT' approved by Analyst",
+      "timestamp": "2026-09-24T10:58:47.396200+00:00",
+      "actor": "Analyst"
+    },
+    {
+      "event_type": "action_approved",
+      "description": "Action 'MONITOR_ACCOUNT' approved by Analyst",
+      "timestamp": "2026-09-24T10:58:47.432517+00:00",
+      "actor": "Analyst"
+    },
+    {
+      "event_type": "action_approved",
+      "description": "Action 'MONITOR_ACCOUNT' approved by Analyst",
+      "timestamp": "2026-09-24T10:58:47.466540+00:00",
+      "actor": "Analyst"
+    },
+    {
+      "event_type": "action_approved",
+      "description": "Action 'MONITOR_ACCOUNT' approved by Analyst",
+      "timestamp": "2026-09-24T10:58:47.499342+00:00",
+      "actor": "Analyst"
+    },
+    {
+      "event_type": "action_approved",
+      "description": "Action 'MONITOR_ACCOUNT' approved by Analyst",
+      "timestamp": "2026-09-24T10:58:47.579729+00:00",
+      "actor": "Analyst"
+    },
+    {
+      "event_type": "action_approved",
+      "description": "Action 'MONITOR_ACCOUNT' approved by Analyst",
+      "timestamp": "2026-09-24T10:58:52.458237+00:00",
+      "actor": "Analyst"
     }
   ],
   "similar_cases": [
