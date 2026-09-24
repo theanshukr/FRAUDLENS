@@ -5,8 +5,8 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { getCases, getGraph, expandGraph, CaseSummary } from "@/lib/api";
-import { Card, Badge, cn } from "@/components/ui";
+import { getCases, getGraph, expandGraph, CaseSummary, GraphResponse, GraphNode, GraphEdge } from "@/lib/api";
+import { Badge, cn } from "@/components/ui";
 import { 
   Search, 
   Network, 
@@ -18,14 +18,22 @@ import {
   Box, 
   Info, 
   MapPin,
-  Mail,
-  Share2, 
+  Mail, 
   Sparkles, 
   RefreshCw,
   Filter,
   CheckCircle2,
   AlertTriangle,
-  FileText
+  FileText,
+  Layers,
+  ZoomIn,
+  Target,
+  RotateCcw,
+  Zap,
+  Radio,
+  ExternalLink,
+  ShieldAlert,
+  Server
 } from "lucide-react";
 import ReactFlow, { 
   Background, 
@@ -50,12 +58,12 @@ const getLayoutedElements = (nodes: any[], edges: any[], direction = 'TB') => {
 
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
-  dagreGraph.setGraph({ rankdir: direction, nodesep: 110, ranksep: 130 });
+  dagreGraph.setGraph({ rankdir: direction, nodesep: 120, ranksep: 140 });
 
   const nodeMap = new Set(nodes.map((n) => n.id));
 
   nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: 240, height: 95 });
+    dagreGraph.setNode(node.id, { width: 250, height: 100 });
   });
 
   const validEdges = edges.filter((edge) => nodeMap.has(edge.source) && nodeMap.has(edge.target));
@@ -67,13 +75,13 @@ const getLayoutedElements = (nodes: any[], edges: any[], direction = 'TB') => {
   try {
     dagre.layout(dagreGraph);
   } catch (err) {
-    console.warn("Dagre layout calculation warning:", err);
+    console.warn("Dagre layout warning:", err);
   }
 
   const layoutedNodes = nodes.map((node, idx) => {
     const nodeWithPosition = dagreGraph.node(node.id);
-    const x = nodeWithPosition ? nodeWithPosition.x - 240 / 2 : (idx % 3) * 270 + 50;
-    const y = nodeWithPosition ? nodeWithPosition.y - 95 / 2 : Math.floor(idx / 3) * 150 + 50;
+    const x = nodeWithPosition ? nodeWithPosition.x - 250 / 2 : (idx % 3) * 280 + 50;
+    const y = nodeWithPosition ? nodeWithPosition.y - 100 / 2 : Math.floor(idx / 3) * 160 + 50;
 
     return {
       ...node,
@@ -86,52 +94,62 @@ const getLayoutedElements = (nodes: any[], edges: any[], direction = 'TB') => {
   return { nodes: layoutedNodes, edges: validEdges };
 };
 
-// --- Custom Entity Node ---
+// --- Custom Entity Node (Clean Light Theme) ---
 const EntityNode = ({ data, selected }: any) => {
   const Icon = data.icon || Network;
   const isFlaggedTxn = data.type === "Transaction" && data.suspicious;
+  const isSuspicious = Boolean(data.suspicious);
+  const badgeText = data.status_badge || (isFlaggedTxn ? "FLAGGED TXN" : isSuspicious ? "SUSPICIOUS" : "VALID");
 
   return (
     <div className={cn(
-      "px-4 py-3 shadow-md rounded-xl border flex flex-col gap-2 min-w-[220px] transition-all cursor-pointer backdrop-blur-md",
+      "px-4 py-3 rounded-xl border flex flex-col gap-2 min-w-[230px] transition-all cursor-pointer backdrop-blur-md shadow-sm",
       isFlaggedTxn
-        ? "border-rose-500 bg-rose-950/30 text-rose-100 ring-2 ring-rose-500/50 shadow-rose-950/40"
-        : data.suspicious 
-        ? "border-amber-500/80 bg-amber-950/20 text-amber-100 ring-1 ring-amber-500/40 shadow-amber-950/20" 
-        : "border-slate-800 bg-slate-900/90 text-slate-200 hover:border-sky-500/60 shadow-black/40",
-      selected ? "ring-2 ring-sky-400 ring-offset-2 ring-offset-slate-950 scale-[1.03]" : ""
+        ? "border-rose-500 bg-rose-50 text-rose-950 ring-2 ring-rose-500/30 shadow-rose-200 shadow-md"
+        : isSuspicious 
+        ? "border-amber-400 bg-amber-50/90 text-amber-950 ring-2 ring-amber-400/20 shadow-amber-100 shadow-md" 
+        : "border-slate-200 bg-white text-slate-800 hover:border-blue-400 hover:shadow-md shadow-slate-100",
+      selected ? "ring-2 ring-blue-500 ring-offset-2 ring-offset-white scale-[1.03]" : ""
     )}>
-      <Handle type="target" position={Position.Top} className="!w-2 !h-2 !bg-sky-400/80 !border-0" />
+      <Handle type="target" position={Position.Top} className="!w-2.5 !h-2.5 !bg-blue-500 !border-2 !border-white" />
       <div className="flex items-center gap-3">
         <div className={cn(
           "p-2.5 rounded-lg shrink-0", 
-          isFlaggedTxn ? "bg-rose-500/20 text-rose-400" :
-          data.suspicious ? "bg-amber-500/20 text-amber-400" : "bg-sky-500/15 text-sky-400"
+          isFlaggedTxn ? "bg-rose-100 text-rose-600" :
+          isSuspicious ? "bg-amber-100 text-amber-700" : "bg-blue-50 text-blue-600"
         )}>
           <Icon className="w-5 h-5" />
         </div>
         <div className="flex-1 overflow-hidden">
-          <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-0.5 flex items-center justify-between">
-            <span>{data.type}</span>
-            {isFlaggedTxn ? (
-              <span className="text-[9px] font-extrabold text-rose-300 bg-rose-500/20 px-1.5 py-0.5 rounded border border-rose-500/40">FLAGGED TXN</span>
-            ) : data.suspicious ? (
-              <span className="text-[9px] font-extrabold text-amber-300 bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/40">SUSPICIOUS</span>
-            ) : (
-              <span className="text-[9px] font-medium text-emerald-400 bg-emerald-500/10 px-1 rounded">VALID</span>
-            )}
+          <div className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 mb-0.5 flex items-center justify-between">
+            <span className="truncate">{data.type}</span>
+            <span className={cn(
+              "text-[9px] font-extrabold px-1.5 py-0.5 rounded border shrink-0",
+              isFlaggedTxn 
+                ? "text-rose-700 bg-rose-100 border-rose-300 animate-pulse" 
+                : isSuspicious 
+                ? "text-amber-800 bg-amber-100 border-amber-300" 
+                : "text-emerald-700 bg-emerald-50 border-emerald-200"
+            )}>
+              {badgeText}
+            </span>
           </div>
-          <div className={cn("text-xs font-mono font-bold truncate", isFlaggedTxn ? "text-rose-200" : data.suspicious ? "text-amber-200" : "text-slate-100")}>
+          <div className={cn("text-xs font-mono font-bold truncate", isFlaggedTxn ? "text-rose-900" : isSuspicious ? "text-amber-950" : "text-slate-900")}>
             {data.label}
           </div>
           {data.properties?.amount && (
-            <div className="text-[10px] font-mono text-slate-400 mt-0.5">
-              Amt: <span className="font-semibold text-rose-300">{data.properties.amount}</span>
+            <div className="text-[10px] font-mono text-slate-600 mt-0.5">
+              Amt: <span className="font-semibold text-rose-600">{data.properties.amount}</span>
+            </div>
+          )}
+          {data.properties?.risk_score && data.properties.risk_score !== "—" && (
+            <div className="text-[10px] font-mono text-slate-600">
+              Risk: <span className="font-semibold text-amber-600">{data.properties.risk_score}</span>
             </div>
           )}
         </div>
       </div>
-      <Handle type="source" position={Position.Bottom} className="!w-2 !h-2 !bg-sky-400/80 !border-0" />
+      <Handle type="source" position={Position.Bottom} className="!w-2.5 !h-2.5 !bg-blue-500 !border-2 !border-white" />
     </div>
   );
 };
@@ -140,13 +158,15 @@ const nodeTypes = {
   entity: EntityNode,
 };
 
-// --- Graph Canvas Inner Component ---
+// --- Graph Canvas Inner Component (Light Theme) ---
 const GraphCanvas = ({ 
   nodesData, 
   edgesData, 
   suspiciousNodes, 
   suspiciousEdges,
+  highlightedPaths,
   filterType,
+  relFilters,
   onNodeClick,
   onEdgeClick
 }: { 
@@ -154,7 +174,9 @@ const GraphCanvas = ({
   edgesData: any[],
   suspiciousNodes: string[],
   suspiciousEdges: string[],
+  highlightedPaths: string[][],
   filterType: string,
+  relFilters: Set<string>,
   onNodeClick: (node: any) => void,
   onEdgeClick: (edge: any) => void
 }) => {
@@ -169,7 +191,7 @@ const GraphCanvas = ({
       return;
     }
 
-    // Apply filter
+    // Apply entity filter
     const filteredNodesData = nodesData.filter((n: any) => {
       if (filterType === "ALL") return true;
       const t = (n.type || "").toLowerCase();
@@ -177,7 +199,8 @@ const GraphCanvas = ({
       if (filterType === "CARDS") return t.includes("card");
       if (filterType === "TRANSACTIONS") return t.includes("transaction") || t.includes("txn");
       if (filterType === "DEVICES") return t.includes("device") || t.includes("profile");
-      if (filterType === "CONNECTIONS") return n.suspicious || suspiciousNodes.includes(n.id);
+      if (filterType === "CASES") return t.includes("case") || t.includes("closedcase");
+      if (filterType === "CONNECTIONS") return n.suspicious || suspiciousNodes?.includes(n.id);
       return true;
     });
 
@@ -202,18 +225,20 @@ const GraphCanvas = ({
           label: n.label || n.id, 
           type: n.type, 
           suspicious: Boolean(n.suspicious || suspiciousNodes?.includes(n.id)),
+          status_badge: n.status_badge,
           icon
         },
         position: { x: 0, y: 0 }
       };
     });
     
-    // Strict edge deduplication on frontend to physically prevent duplicate parallel edges
+    // Filter and deduplicate edges
     const edgePairMap = new Map<string, any>();
     (edgesData || []).forEach((e: any) => {
       if (!e.source || !e.target || e.source === e.target) return;
       if (!activeNodeIds.has(e.source) || !activeNodeIds.has(e.target)) return;
-      const pairKey = [e.source, e.target].sort().join("---");
+      if (relFilters.size > 0 && !relFilters.has(e.type?.toUpperCase())) return;
+      const pairKey = [e.source, e.target, e.type].join("---");
       if (!edgePairMap.has(pairKey)) {
         edgePairMap.set(pairKey, { ...e });
       }
@@ -230,7 +255,7 @@ const GraphCanvas = ({
       );
 
       return {
-        id: `edge-${e.source}-${e.target}-${idx}`,
+        id: `edge-${e.source}-${e.target}-${e.type || idx}`,
         source: e.source,
         target: e.target,
         type: 'smoothstep',
@@ -238,17 +263,17 @@ const GraphCanvas = ({
         label: e.label || e.type,
         animated: isSuspicious,
         style: { 
-          stroke: isSuspicious ? '#f43f5e' : '#475569',
+          stroke: isSuspicious ? '#e11d48' : '#94a3b8',
           strokeWidth: isSuspicious ? 2.5 : 1.5,
           strokeDasharray: isSuspicious ? '5,5' : undefined,
         },
-        labelStyle: { fill: isSuspicious ? '#fda4af' : '#94a3b8', fontWeight: 600, fontSize: 10, fontFamily: 'monospace' },
-        labelBgStyle: { fill: '#0f172a', fillOpacity: 0.9, rx: 4, ry: 4 },
+        labelStyle: { fill: isSuspicious ? '#be123c' : '#475569', fontWeight: 700, fontSize: 10, fontFamily: 'monospace' },
+        labelBgStyle: { fill: isSuspicious ? '#fff1f2' : '#ffffff', fillOpacity: 0.95, rx: 4, ry: 4, stroke: isSuspicious ? '#fecdd3' : '#e2e8f0', strokeWidth: 1 },
         labelBgPadding: [6, 3] as [number, number],
         labelBgBorderRadius: 4,
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          color: isSuspicious ? '#f43f5e' : '#475569',
+          color: isSuspicious ? '#e11d48' : '#94a3b8',
         }
       };
     });
@@ -259,17 +284,17 @@ const GraphCanvas = ({
     
     const timer = setTimeout(() => {
       try {
-        fitView({ padding: 0.25, duration: 600 });
+        fitView({ padding: 0.2, duration: 500 });
       } catch (e) {
-        console.warn("fitView error", e);
+        console.warn("fitView warning:", e);
       }
     }, 150);
 
     return () => clearTimeout(timer);
-  }, [nodesData, edgesData, suspiciousNodes, suspiciousEdges, filterType, setNodes, setEdges, fitView]);
+  }, [nodesData, edgesData, suspiciousNodes, suspiciousEdges, filterType, relFilters, setNodes, setEdges, fitView]);
 
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative bg-slate-50">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -284,32 +309,32 @@ const GraphCanvas = ({
         fitView
         className="w-full h-full"
       >
-        <Background color="#334155" gap={24} size={1} />
-        <Controls className="bg-slate-900 border border-slate-800 shadow-xl rounded-xl overflow-hidden text-slate-200 fill-slate-200" />
+        <Background color="#cbd5e1" gap={24} size={1} />
+        <Controls className="bg-white border border-slate-200 shadow-md rounded-xl overflow-hidden text-slate-700 fill-slate-700" />
         
-        {/* Graph Legend */}
-        <Panel position="bottom-left" className="bg-slate-950/90 backdrop-blur-md border border-slate-800 p-3.5 rounded-xl shadow-xl mb-4 ml-4 z-10 space-y-2.5 min-w-[200px]">
-          <h4 className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">GRAPH LEGEND</h4>
+        {/* Graph Legend (Light Theme) */}
+        <Panel position="bottom-left" className="bg-white/95 backdrop-blur-md border border-slate-200 p-3.5 rounded-xl shadow-lg mb-4 ml-4 z-10 space-y-2 min-w-[210px]">
+          <h4 className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500">TIGERGRAPH LEGEND</h4>
           <div className="space-y-1.5 text-[11px] font-mono">
             <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full border border-sky-400/80 bg-sky-500/20"></div>
-              <span className="text-slate-300">○ Legitimate Entity</span>
+              <div className="w-2.5 h-2.5 rounded-full border border-blue-500 bg-blue-100"></div>
+              <span className="text-slate-700">Legitimate Vertex</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full border border-amber-400 bg-amber-500/30"></div>
-              <span className="text-amber-300 font-semibold">◉ Suspicious Entity</span>
+              <div className="w-2.5 h-2.5 rounded-full border border-amber-500 bg-amber-100"></div>
+              <span className="text-amber-800 font-semibold">Suspicious / Shared</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full border border-rose-500 bg-rose-500"></div>
-              <span className="text-rose-400 font-bold">● Flagged Transaction</span>
+              <span className="text-rose-700 font-bold">Flagged Transaction</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-0.5 bg-slate-500"></div>
-              <span className="text-slate-400">━━ Normal Relationship</span>
+              <div className="w-4 h-0.5 bg-slate-400"></div>
+              <span className="text-slate-600">Direct TigerGraph Edge</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-0.5 border-t border-dashed border-rose-500"></div>
-              <span className="text-rose-400 font-medium">┅┅ Fraud / Attack Link</span>
+              <div className="w-4 h-0.5 border-t-2 border-dashed border-rose-500"></div>
+              <span className="text-rose-600 font-bold">Attack / Risk Path</span>
             </div>
           </div>
         </Panel>
@@ -318,7 +343,7 @@ const GraphCanvas = ({
   );
 };
 
-// --- Main Page Component ---
+// --- Main Page Component (Light Theme) ---
 export default function GraphPage() {
   const [cases, setCases] = useState<CaseSummary[]>([]);
   const [selectedCase, setSelectedCase] = useState<string | null>(null);
@@ -328,10 +353,12 @@ export default function GraphPage() {
   const [expanding, setExpanding] = useState(false);
   const [expansionMsg, setExpansionMsg] = useState<{ type: "success" | "info" | "error"; text: string } | null>(null);
   const [search, setSearch] = useState("");
+  const [hops, setHops] = useState<number>(1);
   const [filterType, setFilterType] = useState<string>("ALL");
+  const [activeRelFilters, setActiveRelFilters] = useState<Set<string>>(new Set());
   
-  // Cache to store graph data per case
-  const [graphCache, setGraphCache] = useState<Record<string, any>>({});
+  // Cache to store graph data per case + hop level
+  const [graphCache, setGraphCache] = useState<Record<string, GraphResponse>>({});
   
   // Selection state
   const [selectedNodeData, setSelectedNodeData] = useState<any | null>(null);
@@ -351,21 +378,23 @@ export default function GraphPage() {
       .finally(() => setLoadingCases(false));
   }, []);
 
-  const loadCaseGraph = useCallback((caseId: string, force = false) => {
+  const loadCaseGraph = useCallback((caseId: string, hopDepth = 1, force = false) => {
     if (!caseId) return;
     setSelectedNodeData(null);
     setSelectedEdgeData(null);
     setExpansionMsg(null);
 
-    if (!force && graphCache[caseId]) {
+    const cacheKey = `${caseId}_h${hopDepth}`;
+    if (!force && graphCache[cacheKey]) {
       return;
     }
 
     setLoadingGraph(true);
-    getGraph(caseId)
-      .then((res) => {
+    getGraph(caseId, hopDepth)
+      .then((res: GraphResponse) => {
         setGraphCache((prev) => ({
           ...prev,
+          [cacheKey]: res,
           [caseId]: res
         }));
       })
@@ -375,27 +404,52 @@ export default function GraphPage() {
 
   useEffect(() => {
     if (selectedCase) {
-      loadCaseGraph(selectedCase);
+      loadCaseGraph(selectedCase, hops);
     }
-  }, [selectedCase]);
+  }, [selectedCase, hops]);
+
+  // Handle Hop Change
+  const handleHopChange = (newHops: number) => {
+    setHops(newHops);
+    if (selectedCase) {
+      loadCaseGraph(selectedCase, newHops, true);
+    }
+  };
 
   // Real Multi-Hop TigerGraph Expansion (Zero Synthetic Data)
-  const handleExpandNeighbors = async () => {
+  const handleExpandNeighbors = async (expandHops: number = 1) => {
     if (!selectedCase || !selectedNodeData) return;
     setExpanding(true);
     setExpansionMsg(null);
 
     try {
-      const res = await expandGraph(selectedCase, selectedNodeData.id, selectedNodeData.type || "Transaction");
+      const res = await expandGraph(
+        selectedCase, 
+        selectedNodeData.id, 
+        selectedNodeData.type || "Transaction", 
+        expandHops
+      );
       const newNodes = res.nodes || [];
       const newEdges = res.edges || [];
 
       if (newNodes.length === 0 && newEdges.length === 0) {
-        setExpansionMsg({ type: "info", text: "No additional 1-hop neighbors found in TigerGraph." });
+        setExpansionMsg({ type: "info", text: "No additional live TigerGraph neighbors found." });
         return;
       }
 
-      const current = graphCache[selectedCase] || { nodes: [], edges: [], suspicious_nodes: [], suspicious_edges: [] };
+      const cacheKey = `${selectedCase}_h${hops}`;
+      const current = graphCache[cacheKey] || graphCache[selectedCase] || { 
+        nodes: [], 
+        edges: [], 
+        suspicious_nodes: [], 
+        suspicious_edges: [],
+        highlighted_paths: [],
+        hops,
+        access_mode: "DIRECT",
+        mcp_calls: 0,
+        tg_status: "CONNECTED"
+      };
+
       const existingNodeIds = new Set(current.nodes.map((n: any) => n.id));
       const mergedNodes = [...current.nodes];
       let addedNodesCount = 0;
@@ -408,13 +462,13 @@ export default function GraphPage() {
         }
       });
 
-      const existingEdgeKeys = new Set(current.edges.map((e: any) => `${e.source}-${e.target}`));
+      const existingEdgeKeys = new Set(current.edges.map((e: any) => `${e.source}-${e.target}-${e.type}`));
       const mergedEdges = [...current.edges];
       let addedEdgesCount = 0;
 
       newEdges.forEach((edge: any) => {
-        const k1 = `${edge.source}-${edge.target}`;
-        const k2 = `${edge.target}-${edge.source}`;
+        const k1 = `${edge.source}-${edge.target}-${edge.type}`;
+        const k2 = `${edge.target}-${edge.source}-${edge.type}`;
         if (!existingEdgeKeys.has(k1) && !existingEdgeKeys.has(k2)) {
           mergedEdges.push(edge);
           existingEdgeKeys.add(k1);
@@ -422,20 +476,23 @@ export default function GraphPage() {
         }
       });
 
+      const updatedGraph: GraphResponse = {
+        ...current,
+        nodes: mergedNodes,
+        edges: mergedEdges,
+        suspicious_nodes: Array.from(new Set([...(current.suspicious_nodes || [])])),
+        suspicious_edges: Array.from(new Set([...(current.suspicious_edges || [])])),
+      };
+
       setGraphCache((prev) => ({
         ...prev,
-        [selectedCase]: {
-          ...current,
-          nodes: mergedNodes,
-          edges: mergedEdges,
-          suspicious_nodes: Array.from(new Set([...(current.suspicious_nodes || []), ...(res.suspicious_nodes || [])])),
-          suspicious_edges: Array.from(new Set([...(current.suspicious_edges || []), ...(res.suspicious_edges || [])])),
-        }
+        [cacheKey]: updatedGraph,
+        [selectedCase]: updatedGraph
       }));
 
       setExpansionMsg({
         type: "success",
-        text: `+${addedNodesCount} ${addedNodesCount === 1 ? "entity" : "entities"}, +${addedEdgesCount} ${addedEdgesCount === 1 ? "relationship" : "relationships"} expanded from TigerGraph`
+        text: `+${addedNodesCount} entities, +${addedEdgesCount} relationships expanded from TigerGraph`
       });
     } catch (err: any) {
       console.error("Expansion error:", err);
@@ -449,13 +506,44 @@ export default function GraphPage() {
     return cases.filter((c) => 
       !search || 
       c.case_id?.toLowerCase().includes(search.toLowerCase()) ||
-      c.pattern?.toLowerCase().includes(search.toLowerCase())
+      c.pattern?.toLowerCase().includes(search.toLowerCase()) ||
+      (c.customer_id && c.customer_id.toLowerCase().includes(search.toLowerCase())) ||
+      (c.card_id && c.card_id.toLowerCase().includes(search.toLowerCase()))
     );
   }, [cases, search]);
 
-  const currentGraph = selectedCase ? graphCache[selectedCase] : null;
+  const cacheKey = selectedCase ? `${selectedCase}_h${hops}` : "";
+  const currentGraph = selectedCase ? (graphCache[cacheKey] || graphCache[selectedCase]) : null;
 
-  // Derive factual Graph Insight summary purely from real nodes/edges
+  // Available relationship types in active graph
+  const availableRelTypes = useMemo(() => {
+    if (!currentGraph?.edges) return [];
+    const types = new Set<string>();
+    currentGraph.edges.forEach((e) => {
+      if (e.type) types.add(e.type.toUpperCase());
+    });
+    return Array.from(types);
+  }, [currentGraph]);
+
+  const toggleRelFilter = (relType: string) => {
+    setActiveRelFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(relType)) {
+        next.delete(relType);
+      } else {
+        next.add(relType);
+      }
+      return next;
+    });
+  };
+
+  const nodeCount = currentGraph?.nodes?.length || 0;
+  const edgeCount = currentGraph?.edges?.length || 0;
+  const accessMode = currentGraph?.access_mode || "DIRECT";
+  const mcpCalls = currentGraph?.mcp_calls || 0;
+  const isTgConnected = currentGraph?.tg_status === "CONNECTED";
+
+  // Dynamic Graph Insight
   const graphInsight = useMemo(() => {
     if (!currentGraph || !currentGraph.nodes || currentGraph.nodes.length === 0) return null;
     const nodes = currentGraph.nodes;
@@ -463,67 +551,71 @@ export default function GraphPage() {
     
     const cardNodes = nodes.filter((n: any) => (n.type || "").toLowerCase().includes("card"));
     const devNodes = nodes.filter((n: any) => (n.type || "").toLowerCase().includes("device") || (n.type || "").toLowerCase().includes("profile"));
-    const txNodes = nodes.filter((n: any) => (n.type || "").toLowerCase().includes("transaction") || (n.type || "").toLowerCase().includes("txn"));
     const suspiciousCount = nodes.filter((n: any) => n.suspicious).length;
 
     const insights: string[] = [];
     if (nodes.length <= 2) {
       return {
         isSparse: true,
-        text: "Limited graph neighborhood available for this case. Use 'Expand Neighbors' on any entity to query additional live TigerGraph relationships."
+        text: "Limited 1-hop view. Click [+1 Hop] or select an entity and click [Expand Selected] to traverse deeper TigerGraph connections."
       };
     }
 
-    insights.push(`${nodes.length} entities and ${edges.length} relationships in active graph neighborhood.`);
+    insights.push(`${nodes.length} entities and ${edges.length} multi-hop relationships retrieved across ${hops} hop(s).`);
     if (devNodes.length > 0 && cardNodes.length > 1) {
-      insights.push(`Shared device relationship linked across ${cardNodes.length} customer cards.`);
+      insights.push(`Shared device fingerprint connects ${cardNodes.length} customer cards in fraud network.`);
     }
     if (suspiciousCount > 0) {
-      insights.push(`${suspiciousCount} entities flagged as suspicious along the multi-hop fraud path.`);
+      insights.push(`${suspiciousCount} entities flagged along the active attack path.`);
     }
 
     return {
       isSparse: false,
       text: insights.join(" ")
     };
-  }, [currentGraph]);
+  }, [currentGraph, hops]);
 
   const renderProps = (propsObj: any) => {
     if (!propsObj || typeof propsObj !== 'object') return null;
-    return Object.entries(propsObj).map(([k, v]) => (
-      <div key={k} className="flex justify-between text-xs py-1 border-b border-slate-800 last:border-0">
-        <span className="text-slate-400 font-mono text-[11px]">{k}</span>
-        <span className="font-mono text-slate-200 truncate max-w-[140px] text-right text-[11px]" title={String(v)}>
-          {String(v)}
-        </span>
-      </div>
-    ));
+    return Object.entries(propsObj).map(([k, v]) => {
+      if (k === "source" || v === null || v === undefined || strVal(v) === "" || strVal(v).toLowerCase() === "nan") return null;
+      return (
+        <div key={k} className="flex justify-between text-xs py-1.5 border-b border-slate-100 last:border-0 items-start">
+          <span className="text-slate-500 font-mono text-[11px] shrink-0 mr-2">{k}</span>
+          <span className="font-mono text-slate-800 text-right text-[11px] break-all font-medium" title={String(v)}>
+            {String(v)}
+          </span>
+        </div>
+      );
+    });
   };
 
-  const nodeCount = currentGraph?.nodes?.length || 0;
-  const edgeCount = currentGraph?.edges?.length || 0;
+  function strVal(v: any): string {
+    return typeof v === "object" ? JSON.stringify(v) : String(v);
+  }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden bg-slate-950 text-slate-100">
-      {/* Sidebar: Case Selector */}
-      <div className="w-80 border-r border-slate-800 bg-slate-900/60 flex flex-col shrink-0 z-20 shadow-lg relative">
-        <div className="p-4 border-b border-slate-800 shrink-0">
+    <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden bg-slate-50 text-slate-900">
+      {/* Sidebar: Case Selector (Light Theme) */}
+      <div className="w-80 border-r border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-sm relative">
+        <div className="p-4 border-b border-slate-200 shrink-0">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
+            <h2 className="text-xs font-mono font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+              <Network className="w-3.5 h-3.5 text-blue-600" />
               Investigation Cases
             </h2>
-            <Badge variant="primary" className="text-[10px] font-mono px-1.5 py-0.5 bg-sky-500/20 text-sky-300 border border-sky-500/30">
+            <span className="text-[10px] font-mono px-2 py-0.5 bg-blue-50 text-blue-700 font-bold border border-blue-200 rounded-full">
               {filteredCases.length} Cases
-            </Badge>
+            </span>
           </div>
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Search Case ID or pattern..."
+              placeholder="Search Case ID, card, customer..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono"
+              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono"
             />
           </div>
         </div>
@@ -531,7 +623,7 @@ export default function GraphPage() {
           {loadingCases ? (
             <div className="p-4 space-y-2 animate-pulse">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-12 bg-slate-800/50 rounded-lg w-full"></div>
+                <div key={i} className="h-12 bg-slate-100 rounded-lg w-full"></div>
               ))}
             </div>
           ) : filteredCases.length > 0 ? (
@@ -542,20 +634,20 @@ export default function GraphPage() {
                 className={cn(
                   "w-full text-left p-3 rounded-lg transition-all flex items-center justify-between group",
                   selectedCase === c.case_id 
-                    ? "bg-sky-500/20 border border-sky-500/50 text-white shadow-sm" 
-                    : "hover:bg-slate-800/60 text-slate-300 border border-transparent"
+                    ? "bg-blue-50 border border-blue-300 text-blue-900 shadow-sm" 
+                    : "hover:bg-slate-50 text-slate-700 border border-transparent"
                 )}
               >
                 <div className="overflow-hidden mr-2">
                   <span className="font-mono text-xs font-bold block truncate">{c.case_id}</span>
-                  <span className="text-[10px] font-mono text-slate-400 block truncate mt-0.5">
+                  <span className="text-[10px] font-mono text-slate-500 block truncate mt-0.5">
                     {c.pattern?.replace(/_/g, " ") || c.trigger_type?.replace(/_/g, " ") || "Risk Trigger"}
                   </span>
                 </div>
                 <span className={cn(
                   "text-[9px] font-mono uppercase font-bold tracking-wider px-2 py-0.5 rounded shrink-0",
-                  c.final_risk_level === "HIGH" || c.final_risk_level === "CRITICAL" ? "bg-rose-500/20 text-rose-400 border border-rose-500/30" : 
-                  "bg-slate-800 text-slate-400 border border-slate-700"
+                  c.final_risk_level === "HIGH" || c.final_risk_level === "CRITICAL" ? "bg-rose-100 text-rose-700 border border-rose-200" : 
+                  "bg-slate-100 text-slate-600 border border-slate-200"
                 )}>
                   {c.final_risk_level || "HIGH"}
                 </span>
@@ -568,101 +660,220 @@ export default function GraphPage() {
       </div>
 
       {/* Main: Graph Display */}
-      <div className="flex-1 bg-slate-950 flex flex-col overflow-hidden relative">
-        {/* Header Bar */}
-        <div className="h-16 px-6 border-b border-slate-800 bg-slate-900/80 backdrop-blur-md shadow-sm shrink-0 flex justify-between items-center z-10">
+      <div className="flex-1 bg-slate-50 flex flex-col overflow-hidden relative">
+        {/* Dynamic Header Bar (Clean Light Theme) */}
+        <div className="h-16 px-6 border-b border-slate-200 bg-white/95 backdrop-blur-md shadow-sm shrink-0 flex justify-between items-center z-10">
           <div>
             <div className="flex items-center gap-2.5">
-              <Network className="w-5 h-5 text-sky-400" />
-              <h1 className="text-base font-bold tracking-tight text-white">
+              <Network className="w-5 h-5 text-blue-600" />
+              <h1 className="text-base font-bold tracking-tight text-slate-900">
                 TigerGraph Intelligence Explorer
               </h1>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                TIGERGRAPH LIVE
+              <span className={cn(
+                "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border",
+                isTgConnected 
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-slate-100 text-slate-600 border-slate-200"
+              )}>
+                <span className={cn("w-1.5 h-1.5 rounded-full", isTgConnected ? "bg-emerald-500 animate-pulse" : "bg-slate-400")}></span>
+                {isTgConnected ? "TIGERGRAPH LIVE" : "OFFLINE CACHE"}
               </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                <Server className="w-3 h-3 text-blue-600" />
+                {accessMode === "MCP" ? "ACCESS: MCP" : "ACCESS: DIRECT TIGERGRAPH"}
+              </span>
+              {mcpCalls > 0 && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  <Zap className="w-3 h-3 text-indigo-600" />
+                  {mcpCalls} MCP Calls
+                </span>
+              )}
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Live TigerGraph investigation graph • Multi-hop traversal and entity neighbor discovery
+            <p className="text-xs text-slate-500 mt-0.5 font-mono">
+              Live multi-hop graph traversal • Case: <span className="font-semibold text-slate-800">{selectedCase || "None"}</span>
             </p>
           </div>
+
           <div className="flex items-center gap-3">
+            {selectedCase && currentGraph && (
+              <div className="font-mono text-xs px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 flex items-center gap-2 shadow-sm">
+                <span className="font-bold text-blue-600">{nodeCount}</span> {nodeCount === 1 ? "Entity" : "Entities"}
+                <span className="text-slate-300">•</span>
+                <span className="font-bold text-blue-600">{edgeCount}</span> {edgeCount === 1 ? "Relationship" : "Relationships"}
+                <span className="text-slate-300">•</span>
+                <span className="font-bold text-amber-600">{hops}</span> {hops === 1 ? "Hop" : "Hops"}
+              </div>
+            )}
+            
             {selectedCase && (
-              <>
-                {currentGraph && (
-                  <div className="font-mono text-xs px-3 py-1 bg-slate-800 border border-slate-700 rounded-lg text-slate-300">
-                    {nodeCount} {nodeCount === 1 ? "Node" : "Nodes"} • {edgeCount} {edgeCount === 1 ? "Edge" : "Edges"}
-                  </div>
-                )}
-                <button
-                  onClick={() => loadCaseGraph(selectedCase, true)}
-                  disabled={loadingGraph}
-                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors border border-slate-800"
-                  title="Refresh Graph Data"
-                >
-                  <RefreshCw className={cn("w-4 h-4", loadingGraph && "animate-spin text-sky-400")} />
-                </button>
-              </>
+              <button
+                onClick={() => loadCaseGraph(selectedCase, hops, true)}
+                disabled={loadingGraph}
+                className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200 bg-white shadow-sm"
+                title="Refresh Live TigerGraph Subgraph"
+              >
+                <RefreshCw className={cn("w-4 h-4", loadingGraph && "animate-spin text-blue-600")} />
+              </button>
             )}
           </div>
         </div>
 
-        {/* Graph Filters Bar */}
-        <div className="px-6 py-2 border-b border-slate-800 bg-slate-900/40 flex items-center justify-between z-10">
-          <div className="flex items-center gap-1.5">
-            <Filter className="w-3.5 h-3.5 text-slate-400 mr-1" />
-            <span className="text-[10px] font-mono uppercase font-bold text-slate-400 mr-2">Filters:</span>
-            {["ALL", "CUSTOMERS", "CARDS", "TRANSACTIONS", "DEVICES", "CONNECTIONS"].map((f) => (
+        {/* Controls & Hop Depth Bar (Light Theme) */}
+        <div className="px-6 py-2 border-b border-slate-200 bg-white flex items-center justify-between z-10 flex-wrap gap-2">
+          {/* Hop Controls */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono uppercase font-bold text-slate-500 flex items-center gap-1 mr-1">
+              <Layers className="w-3.5 h-3.5 text-blue-600" />
+              Hop Depth:
+            </span>
+            {[1, 2, 3].map((h) => (
               <button
-                key={f}
-                onClick={() => setFilterType(f)}
+                key={h}
+                onClick={() => handleHopChange(h)}
                 className={cn(
-                  "px-2.5 py-1 rounded text-[10px] font-mono font-bold uppercase transition-colors",
-                  filterType === f 
-                    ? "bg-sky-500/20 text-sky-300 border border-sky-500/40" 
-                    : "bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800"
+                  "px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1",
+                  hops === h
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200"
                 )}
               >
-                {f}
+                {h} {h === 1 ? "Hop" : "Hops"}
+              </button>
+            ))}
+
+            <div className="h-4 w-px bg-slate-200 mx-1"></div>
+
+            {/* Expand Selected Button */}
+            <button
+              onClick={() => handleExpandNeighbors(1)}
+              disabled={!selectedNodeData || expanding}
+              className={cn(
+                "px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 border shadow-sm",
+                selectedNodeData
+                  ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
+                  : "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
+              )}
+              title={selectedNodeData ? `Query live TigerGraph neighbors for ${selectedNodeData.label}` : "Select a node to expand"}
+            >
+              <Sparkles className={cn("w-3.5 h-3.5 text-emerald-600", expanding && "animate-spin")} />
+              {expanding ? "Expanding..." : "Expand Selected (+1 Hop)"}
+            </button>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setFilterType("ALL");
+                setActiveRelFilters(new Set());
+              }}
+              className="px-2.5 py-1 rounded text-[11px] font-mono font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 flex items-center gap-1 transition-colors"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Reset Filters
+            </button>
+          </div>
+        </div>
+
+        {/* Entity & Relationship Filters Bar (Light Theme) */}
+        <div className="px-6 py-2 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between z-10 overflow-x-auto gap-4">
+          {/* Entity Filters */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Filter className="w-3.5 h-3.5 text-slate-400 mr-1" />
+            <span className="text-[10px] font-mono uppercase font-bold text-slate-500 mr-1">Entities:</span>
+            {[
+              { id: "ALL", label: "All" },
+              { id: "CUSTOMERS", label: "Customers" },
+              { id: "CARDS", label: "Cards" },
+              { id: "TRANSACTIONS", label: "Transactions" },
+              { id: "DEVICES", label: "Devices" },
+              { id: "CASES", label: "Historical Cases" },
+              { id: "CONNECTIONS", label: "Suspicious" }
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setFilterType(f.id)}
+                className={cn(
+                  "px-2.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase transition-colors shadow-xs",
+                  filterType === f.id 
+                    ? "bg-blue-600 text-white" 
+                    : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-100"
+                )}
+              >
+                {f.label}
               </button>
             ))}
           </div>
 
-          <div className="text-[11px] font-mono text-slate-400">
-            Click any entity node to inspect properties & expand neighbors
-          </div>
+          {/* Relationship Type Filters */}
+          {availableRelTypes.length > 0 && (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="text-[10px] font-mono uppercase font-bold text-slate-500 mr-1">Edges:</span>
+              {availableRelTypes.map((rel) => {
+                const isActive = activeRelFilters.size === 0 || activeRelFilters.has(rel);
+                return (
+                  <button
+                    key={rel}
+                    onClick={() => toggleRelFilter(rel)}
+                    className={cn(
+                      "px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase transition-colors border",
+                      isActive
+                        ? "bg-indigo-50 text-indigo-700 border-indigo-300 font-bold"
+                        : "bg-slate-100 text-slate-400 border-slate-200 opacity-60"
+                    )}
+                  >
+                    {rel}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Graph Insight Summary Bar */}
+        {/* Dynamic Graph Insight Bar (Light Theme) */}
         {graphInsight && (
           <div className={cn(
-            "px-6 py-2 text-xs font-mono border-b flex items-center gap-2 z-10",
+            "px-6 py-2 text-xs font-mono border-b flex items-center justify-between z-10",
             graphInsight.isSparse 
-              ? "bg-amber-950/20 border-amber-500/30 text-amber-300"
-              : "bg-sky-950/20 border-sky-500/20 text-sky-200"
+              ? "bg-amber-50 border-amber-200 text-amber-900"
+              : "bg-blue-50/80 border-blue-200 text-blue-950"
           )}>
-            {graphInsight.isSparse ? (
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-            ) : (
-              <Sparkles className="w-4 h-4 text-sky-400 shrink-0" />
+            <div className="flex items-center gap-2 truncate">
+              {graphInsight.isSparse ? (
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+              ) : (
+                <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+              )}
+              <span className="font-bold uppercase text-[10px] tracking-wider shrink-0 text-slate-600">GRAPH INSIGHT:</span>
+              <span className="truncate font-medium">{graphInsight.text}</span>
+            </div>
+
+            {expansionMsg && (
+              <div className={cn(
+                "px-2.5 py-0.5 rounded text-[11px] font-mono border shrink-0 ml-4 font-semibold",
+                expansionMsg.type === "success" ? "bg-emerald-100 border-emerald-300 text-emerald-800" :
+                expansionMsg.type === "info" ? "bg-blue-100 border-blue-300 text-blue-800" :
+                "bg-rose-100 border-rose-300 text-rose-800"
+              )}>
+                {expansionMsg.text}
+              </div>
             )}
-            <span className="font-bold uppercase text-[10px] tracking-wider shrink-0">GRAPH INSIGHT:</span>
-            <span className="truncate">{graphInsight.text}</span>
           </div>
         )}
 
-        {/* Canvas Area */}
-        <div className="flex-1 relative w-full h-full bg-slate-950 overflow-hidden">
+        {/* Canvas Area (Light Theme) */}
+        <div className="flex-1 relative w-full h-full bg-slate-50 overflow-hidden">
           {!selectedCase ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center max-w-md mx-auto z-20">
-              <Network className="w-12 h-12 text-slate-600 mb-4" />
-              <h2 className="text-base font-semibold mb-1 text-slate-300">No Investigation Selected</h2>
-              <p className="text-xs text-slate-500 font-mono">Choose a case from the sidebar to visualize its entity relationships and fraud network.</p>
+              <Network className="w-12 h-12 text-slate-300 mb-4" />
+              <h2 className="text-base font-semibold mb-1 text-slate-800">No Investigation Selected</h2>
+              <p className="text-xs text-slate-500 font-mono">Choose a case from the sidebar to visualize its entity relationships and multi-hop fraud network.</p>
             </div>
           ) : loadingGraph ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-slate-950/70 backdrop-blur-sm">
-              <div className="w-8 h-8 rounded-full border-2 border-sky-400 border-t-transparent animate-spin mb-4"></div>
-              <p className="text-xs font-mono text-slate-300">Traversing TigerGraph entities...</p>
+            <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-white/80 backdrop-blur-xs">
+              <div className="w-10 h-10 rounded-full border-3 border-blue-600 border-t-transparent animate-spin mb-4"></div>
+              <p className="text-xs font-mono text-slate-800 font-bold">Traversing TigerGraph {hops}-Hop Subgraph...</p>
+              <p className="text-[11px] font-mono text-slate-500 mt-1">Executing live installed GSQL queries against cloud database</p>
             </div>
           ) : (
             <ReactFlowProvider>
@@ -671,7 +882,9 @@ export default function GraphPage() {
                 edgesData={currentGraph?.edges || []}
                 suspiciousNodes={currentGraph?.suspicious_nodes || []}
                 suspiciousEdges={currentGraph?.suspicious_edges || []}
+                highlightedPaths={currentGraph?.highlighted_paths || []}
                 filterType={filterType}
+                relFilters={activeRelFilters}
                 onNodeClick={setSelectedNodeData}
                 onEdgeClick={setSelectedEdgeData}
               />
@@ -679,17 +892,17 @@ export default function GraphPage() {
           )}
         </div>
 
-        {/* Details Panel Overlay & Multi-hop Expander */}
+        {/* Details Panel Overlay & Multi-hop Expander (Light Theme) */}
         {(selectedNodeData || selectedEdgeData) && (
-          <div className="absolute top-28 right-6 w-84 bg-slate-900/95 backdrop-blur-md border border-slate-800 shadow-2xl rounded-2xl overflow-hidden z-30 flex flex-col max-h-[calc(100%-8rem)] animate-in fade-in slide-in-from-right-4 duration-200">
-            <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/60">
-              <h3 className="text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-2 text-slate-200">
-                <Info className="w-4 h-4 text-sky-400" />
-                {selectedNodeData ? "Entity Inspector" : "Relationship Inspector"}
+          <div className="absolute top-28 right-6 w-96 bg-white/95 backdrop-blur-md border border-slate-200 shadow-2xl rounded-2xl overflow-hidden z-30 flex flex-col max-h-[calc(100%-8.5rem)] animate-in fade-in slide-in-from-right-4 duration-200">
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/80">
+              <h3 className="text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-2 text-slate-800">
+                <Info className="w-4 h-4 text-blue-600" />
+                {selectedNodeData ? `${selectedNodeData.type} Inspector` : "Relationship Inspector"}
               </h3>
               <button 
                 onClick={() => { setSelectedNodeData(null); setSelectedEdgeData(null); setExpansionMsg(null); }}
-                className="text-slate-400 hover:text-white text-xs font-semibold px-2 py-1 rounded hover:bg-slate-800"
+                className="text-slate-400 hover:text-slate-800 text-xs font-semibold px-2 py-1 rounded hover:bg-slate-200"
               >
                 ✕
               </button>
@@ -699,95 +912,105 @@ export default function GraphPage() {
               {selectedNodeData && (
                 <>
                   <div>
-                    <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 block mb-1">
+                    <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 block mb-1">
                       Entity Identifier
                     </span>
-                    <div className="text-sm font-mono font-bold text-white truncate">{selectedNodeData.label || selectedNodeData.id}</div>
-                    <div className="text-[11px] text-slate-400 font-mono mt-0.5">{selectedNodeData.id}</div>
+                    <div className="text-sm font-mono font-bold text-slate-900 truncate">{selectedNodeData.label || selectedNodeData.id}</div>
+                    <div className="text-[11px] text-slate-500 font-mono mt-0.5 break-all">{selectedNodeData.id}</div>
                   </div>
 
                   {/* Real Multi-Hop Expander Button */}
-                  <div className="bg-sky-950/20 border border-sky-500/30 p-3 rounded-xl space-y-2">
-                    <div className="text-xs font-bold text-sky-300 flex items-center gap-1.5 font-mono">
-                      <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-                      Live TigerGraph Expansion
+                  <div className="bg-blue-50/60 border border-blue-200 p-3.5 rounded-xl space-y-2">
+                    <div className="text-xs font-bold text-blue-900 flex items-center justify-between font-mono">
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                        Live TigerGraph Expansion
+                      </span>
+                      <span className="text-[10px] font-semibold text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">GSQL</span>
                     </div>
-                    <p className="text-[11px] text-slate-400 font-mono">
-                      Query 1-hop connected cards, hardware fingerprints, and transactions from TigerGraph Cloud.
+                    <p className="text-[11px] text-slate-600 font-mono leading-relaxed">
+                      Query connected transactions, hardware fingerprints, and customer cards directly from TigerGraph.
                     </p>
-                    <button
-                      onClick={handleExpandNeighbors}
-                      disabled={expanding}
-                      className="w-full py-2 px-3 bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold font-mono rounded-lg transition-all flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
-                    >
-                      {expanding ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          Querying TigerGraph...
-                        </>
-                      ) : (
-                        <>
-                          <Share2 className="w-3.5 h-3.5" />
-                          Expand Neighbors (1-Hop)
-                        </>
-                      )}
-                    </button>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        onClick={() => handleExpandNeighbors(1)}
+                        disabled={expanding}
+                        className="py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold font-mono rounded-lg transition-all flex items-center justify-center gap-1 shadow-sm disabled:opacity-50"
+                      >
+                        {expanding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                        +1 Hop
+                      </button>
+                      <button
+                        onClick={() => handleExpandNeighbors(2)}
+                        disabled={expanding}
+                        className="py-2 px-3 bg-white hover:bg-slate-100 text-blue-700 border border-blue-300 text-xs font-bold font-mono rounded-lg transition-all flex items-center justify-center gap-1 disabled:opacity-50 shadow-sm"
+                      >
+                        {expanding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Layers className="w-3.5 h-3.5" />}
+                        +2 Hops
+                      </button>
+                    </div>
 
                     {expansionMsg && (
                       <div className={cn(
-                        "p-2 rounded text-[11px] font-mono border",
-                        expansionMsg.type === "success" ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300" :
-                        expansionMsg.type === "info" ? "bg-sky-950/40 border-sky-500/40 text-sky-300" :
-                        "bg-rose-950/40 border-rose-500/40 text-rose-300"
+                        "p-2 rounded text-[11px] font-mono border font-semibold",
+                        expansionMsg.type === "success" ? "bg-emerald-50 border-emerald-300 text-emerald-800" :
+                        expansionMsg.type === "info" ? "bg-blue-50 border-blue-300 text-blue-800" :
+                        "bg-rose-50 border-rose-300 text-rose-800"
                       )}>
                         {expansionMsg.text}
                       </div>
                     )}
                   </div>
                   
-                  <div className="space-y-2 pt-1 border-t border-slate-800">
+                  {/* Entity Core Attributes */}
+                  <div className="space-y-2 pt-1 border-t border-slate-200">
                     <div className="flex justify-between text-xs items-center font-mono">
-                      <span className="text-slate-400">Entity Class</span>
-                      <span className="px-2 py-0.5 bg-slate-800 text-slate-200 rounded text-[10px] font-bold">{selectedNodeData.type}</span>
+                      <span className="text-slate-500">Vertex Type</span>
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-800 rounded text-[10px] font-bold border border-slate-200">{selectedNodeData.type}</span>
                     </div>
                     <div className="flex justify-between text-xs items-center font-mono">
-                      <span className="text-slate-400">Risk Verdict</span>
-                      {selectedNodeData.suspicious ? (
-                        <span className="px-2 py-0.5 bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded text-[10px] font-bold flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3"/> FLAGGED
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded text-[10px] font-bold">
-                          Legitimate
-                        </span>
-                      )}
+                      <span className="text-slate-500">Classification</span>
+                      <span className={cn(
+                        "px-2 py-0.5 rounded text-[10px] font-bold border",
+                        selectedNodeData.suspicious 
+                          ? "bg-rose-100 text-rose-800 border-rose-300"
+                          : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                      )}>
+                        {selectedNodeData.status_badge || (selectedNodeData.suspicious ? "SUSPICIOUS" : "LEGITIMATE")}
+                      </span>
                     </div>
                     <div className="flex justify-between text-xs items-center font-mono">
-                      <span className="text-slate-400">Source</span>
-                      <span className="text-sky-300 text-[11px]">TigerGraph Cloud</span>
+                      <span className="text-slate-500">Database Source</span>
+                      <span className="text-blue-700 text-[11px] font-semibold">TigerGraph Cloud</span>
                     </div>
                   </div>
 
-                  {/* Why this matters */}
+                  {/* Risk / Context Alert */}
                   {selectedNodeData.suspicious && (
-                    <div className="bg-rose-950/20 border border-rose-500/30 p-2.5 rounded-lg space-y-1">
-                      <div className="text-[10px] font-mono font-bold text-rose-400 uppercase">Why this matters</div>
-                      <p className="text-[11px] font-mono text-rose-200/90 leading-relaxed">
+                    <div className="bg-rose-50 border border-rose-200 p-3 rounded-xl space-y-1">
+                      <div className="text-[10px] font-mono font-bold text-rose-700 uppercase flex items-center gap-1.5">
+                        <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+                        Fraud Investigation Signal
+                      </div>
+                      <p className="text-[11px] font-mono text-rose-900 leading-relaxed">
                         {selectedNodeData.type === "Transaction" 
-                          ? "Trigger transaction flagged with high fraud probability and velocity anomaly."
+                          ? "Trigger transaction flagged with anomalous velocity and elevated risk score."
                           : selectedNodeData.type === "Card"
-                          ? "Card connected to multiple rapid transactions or shared device fingerprint."
-                          : "Device profile shared across multiple distinct customer accounts."}
+                          ? "Card identity connected to multi-account device sharing ring or rapid burst sequence."
+                          : selectedNodeData.type === "DeviceProfile"
+                          ? "Hardware profile shared across distinct customer card identities."
+                          : "Entity flagged as high-relevance attack node in graph traversal."}
                       </p>
                     </div>
                   )}
                   
+                  {/* Detailed Graph Attributes */}
                   {selectedNodeData.properties && Object.keys(selectedNodeData.properties).length > 0 && (
-                    <div className="space-y-2 border-t border-slate-800 pt-3">
-                      <div className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 mb-1">
-                        Graph Attributes
+                    <div className="space-y-2 border-t border-slate-200 pt-3">
+                      <div className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 mb-1">
+                        Vertex Attributes & Metadata
                       </div>
-                      <div className="bg-slate-950/60 border border-slate-800 rounded-lg p-2.5 space-y-1">
+                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1">
                         {renderProps(selectedNodeData.properties)}
                       </div>
                     </div>
@@ -798,43 +1021,53 @@ export default function GraphPage() {
               {selectedEdgeData && (
                 <>
                   <div>
-                    <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 block mb-1">
-                      Relationship Link
+                    <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500 block mb-1">
+                      Relationship Type
                     </span>
-                    <div className="text-sm font-mono font-bold text-white">{selectedEdgeData.label || selectedEdgeData.type}</div>
+                    <div className="text-sm font-mono font-bold text-slate-900 flex items-center gap-2">
+                      <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded text-xs font-mono font-bold">
+                        {selectedEdgeData.type || selectedEdgeData.label}
+                      </span>
+                    </div>
                   </div>
                   
                   <div className="space-y-3">
-                    <div className="p-3 bg-slate-950/60 rounded-xl space-y-2 border border-slate-800">
+                    <div className="p-3 bg-slate-50 rounded-xl space-y-2 border border-slate-200">
                       <div className="text-xs font-mono">
-                        <span className="text-slate-400 block mb-0.5 text-[10px] uppercase font-bold">Source Entity</span>
-                        <span className="font-mono text-xs font-semibold break-all text-slate-200">{selectedEdgeData.source}</span>
+                        <span className="text-slate-500 block mb-0.5 text-[10px] uppercase font-bold">Source Vertex</span>
+                        <span className="font-mono text-xs font-semibold break-all text-slate-800">{selectedEdgeData.source}</span>
                       </div>
-                      <div className="flex justify-center py-0.5">
-                        <div className="w-0.5 h-3 bg-slate-700"></div>
+                      <div className="flex items-center justify-center py-0.5">
+                        <div className="px-2 py-0.5 bg-slate-200 text-slate-700 rounded text-[9px] font-mono font-bold">
+                          ─── {selectedEdgeData.type} ───►
+                        </div>
                       </div>
                       <div className="text-xs font-mono">
-                        <span className="text-slate-400 block mb-0.5 text-[10px] uppercase font-bold">Target Entity</span>
-                        <span className="font-mono text-xs font-semibold break-all text-slate-200">{selectedEdgeData.target}</span>
+                        <span className="text-slate-500 block mb-0.5 text-[10px] uppercase font-bold">Target Vertex</span>
+                        <span className="font-mono text-xs font-semibold break-all text-slate-800">{selectedEdgeData.target}</span>
                       </div>
                     </div>
                     
-                    <div className="space-y-2 pt-1 border-t border-slate-800">
+                    <div className="space-y-2 pt-1 border-t border-slate-200">
                       <div className="flex justify-between text-xs items-center font-mono">
-                        <span className="text-slate-400">Fraud Relevance</span>
+                        <span className="text-slate-500">Relationship Classification</span>
                         {selectedEdgeData.suspicious ? (
-                          <span className="px-2 py-0.5 bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded text-[10px] font-bold">
+                          <span className="px-2 py-0.5 bg-rose-100 text-rose-800 border border-rose-300 rounded text-[10px] font-bold">
                             Attack Link
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-[10px]">
-                            Normal Association
+                          <span className="px-2 py-0.5 bg-slate-100 text-slate-700 border border-slate-200 rounded text-[10px]">
+                            Schema Association
                           </span>
                         )}
                       </div>
                       <div className="flex justify-between text-xs items-center font-mono">
-                        <span className="text-slate-400">Provenance</span>
-                        <span className="text-sky-300 text-[11px]">TigerGraph Graph Query</span>
+                        <span className="text-slate-500">Graph Schema Edge</span>
+                        <span className="text-blue-700 text-[11px] font-mono font-semibold">{selectedEdgeData.type}</span>
+                      </div>
+                      <div className="flex justify-between text-xs items-center font-mono">
+                        <span className="text-slate-500">Data Source</span>
+                        <span className="text-slate-700 text-[11px]">TigerGraph Live</span>
                       </div>
                     </div>
                   </div>

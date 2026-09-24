@@ -77,6 +77,8 @@ export interface CaseSummary {
   trigger_type?: string | null;
   created_at: string | null;
   txn_id: string | null;
+  card_id?: string | null;
+  customer_id?: string | null;
 }
 
 export interface CasesListResponse {
@@ -145,12 +147,57 @@ export async function getEvidence(caseId: string): Promise<{ evidence: any[]; to
   return fetchApi(`/investigations/${caseId}/evidence`);
 }
 
-export async function getGraph(caseId: string): Promise<any> {
-  return fetchApi(`/investigations/${caseId}/graph`);
+export interface GraphNode {
+  id: string;
+  type: string;
+  label: string;
+  suspicious: boolean;
+  status_badge?: string;
+  properties: Record<string, any>;
 }
 
-export async function expandGraph(caseId: string, entityId: string, entityType: string = "Transaction"): Promise<any> {
-  const params = new URLSearchParams({ entity_id: entityId, entity_type: entityType });
+export interface GraphEdge {
+  source: string;
+  target: string;
+  type: string;
+  label?: string;
+  suspicious?: boolean;
+  provenance?: Record<string, any>;
+}
+
+export interface GraphResponse {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  highlighted_paths: string[][];
+  suspicious_nodes: string[];
+  suspicious_edges: string[];
+  hops: number;
+  access_mode: string;
+  mcp_calls: number;
+  tg_status: string;
+  root_entity_id?: string;
+  summary?: string;
+}
+
+export async function getGraph(caseId: string, hops: number = 1, root?: string): Promise<GraphResponse> {
+  const params = new URLSearchParams();
+  if (hops) params.append("hops", hops.toString());
+  if (root) params.append("root", root);
+  const queryStr = params.toString() ? `?${params.toString()}` : "";
+  return fetchApi(`/investigations/${caseId}/graph${queryStr}`);
+}
+
+export async function expandGraph(caseId: string, entityId: string, entityType: string = "Transaction", hops: number = 1): Promise<{
+  case_id: string;
+  entity_id: string;
+  entity_type: string;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  provenance?: Record<string, any>;
+  source: string;
+  raw_result_count: number;
+}> {
+  const params = new URLSearchParams({ entity_id: entityId, entity_type: entityType, hops: hops.toString() });
   return fetchApi(`/investigations/${caseId}/graph/expand?${params.toString()}`);
 }
 

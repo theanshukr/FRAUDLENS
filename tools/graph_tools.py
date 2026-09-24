@@ -467,38 +467,186 @@ def expand_entity_neighbors(
     conn: Optional[tg.TigerGraphConnection],
     entity_id: str,
     entity_type: str,
+    hops: int = 1,
 ) -> dict:
     """
     Expand neighbors of a given entity for graph visualization using MCP / TigerGraph.
+    Returns real TigerGraph vertices and edges connected to entity_id.
     """
-    eid = str(entity_id)
-    etype = str(entity_type)
+    eid = str(entity_id).strip()
+    etype = str(entity_type).strip()
 
-    if etype.lower() in ("transaction", "txn"):
-        res = execute_graph_query(conn, "get_transaction_neighbors", {"txn_id": eid, "hops": 1})
-    elif etype.lower() in ("card",):
-        res = execute_graph_query(conn, "get_card_history", {"card_id": eid, "days": 30})
-    elif etype.lower() in ("deviceprofile", "device"):
-        res = execute_graph_query(conn, "get_device_neighbors", {"profile_id": eid})
-    elif etype.lower() in ("customer",):
-        res = execute_graph_query(conn, "get_customer_transactions", {"customer_id": eid, "lim": 50, "max_limit": 50})
-    else:
-        res = execute_graph_query(conn, "get_transaction_neighbors", {"txn_id": eid, "hops": 1})
+    nodes_map: dict[str, dict] = {}
+    edges_list: list[dict] = []
+    seen_edge_keys: set[str] = set()
+    provenance_list: list[dict] = []
 
-    if res.get("success"):
-        return {
-            "success": True,
-            "results": res.get("results", []),
-            "entity_id": eid,
-            "entity_ids": [eid],
-            "entity_type": etype,
-            "provenance": res.get("provenance")
-        }
+    def _add_node(vid: str, vtype: str, vlabel: str, suspicious: bool = False, badge: str = "LEGITIMATE", props: Optional[dict] = None):
+        if not vid or vid in ("nan", "nan_nan_nan", "None", ""):
+            return
+        if vid not in nodes_map:
+            nodes_map[vid] = {
+                "id": vid,
+                "type": vtype,
+                "label": vlabel,
+                "suspicious": suspicious,
+                "status_badge": badge,
+                "properties": props or {"id": vid, "type": vtype, "source": "TigerGraph"},
+            }
+
+    def _add_edge(source: str, target: str, rel_type: str, label: Optional[str] = None, suspicious: bool = False):
+        if not source or not target or source == target:
+            return
+        if source not in nodes_map or target not in nodes_map:
+            return
+        key = f"{source}-{target}-{rel_type}"
+        rev_key = f"{target}-{source}-{rel_type}"
+        if key not in seen_edge_keys and rev_key not in seen_edge_keys:
+            seen_edge_keys.add(key)
+            edges_list.append({
+                "source": source,
+                "target": target,
+                "type": rel_type,
+                "label": label or rel_type,
+                "suspicious": suspicious,
+            })
+
+    # Classify the root node
+    from_type, from_label = _classify_entity_id(eid, default_type=etype)
+    _add_node(eid, from_type, from_label, suspicious=False, badge="RELEVANT")
+
+    if conn is not None:
+        try:
+            # 1. Inspect direct TigerGraph edges
+            direct_edges = []
+            try:
+                direct_edges = conn.getEdges(from_type, eid) or []
+            except Exception:
+                pass
+
+            for edge in direct_edges:
+                to_id = str(edge.get("to_id", ""))
+                to_type = str(edge.get("to_type", ""))
+                e_type = str(edge.get("e_type", "CONNECTED_TO"))
+                if to_id and to_id not in ("nan", "nan_nan_nan"):
+                    t_type, t_label = _classify_entity_id(to_id, default_type=to_type)
+                    # Fetch vertex attributes if possible
+                    props = {"id": to_id, "type": t_type, "source": "TigerGraph"}
+                    try:
+                        v_data = conn.getVerticesById(t_type, [to_id])
+                        if v_data and len(v_data) > 0 and "attributes" in v_data[0]:
+                            props.update(v_data[0]["attributes"])
+                    except Exception:
+                        pass
+                    _add_node(to_id, t_type, t_label, suspicious=False, badge="CONNECTED", props=props)
+                    _add_edge(eid, to_id, e_type, e_type)
+
+            # 2. Run domain-specific queries based on entity type
+            if from_type.lower() in ("transaction", "txn"):
+                res = execute_graph_query(conn, "get_transaction_neighbors", {"txn_id": eid, "hops": int(hops)})
+                if res.get("provenance"):
+                    provenance_list.append(res["provenance"])
+                for row in res.get("results", []):
+                    for neighbor in row.get("@@neighbors", []):
+                        nid = str(neighbor).strip()
+                        if nid and nid != eid and nid not in ("nan", "nan_nan_nan"):
+                            ntype, nlabel = _classify_entity_id(nid)
+                            _add_node(nid, ntype, nlabel, suspicious=False, badge="CONNECTED")
+                            rel_type = "CONNECTED_TO"
+                            if ntype == "BillingRegion":
+                                rel_type = "BILLED_IN"
+                            elif ntype == "EmailDomain":
+                                rel_type = "PURCHASER_EMAIL"
+                            elif ntype == "DeviceProfile":
+                                rel_type = "FROM_DEVICE"
+                            elif ntype == "Card":
+                                rel_type = "MADE"
+                                _add_edge(nid, eid, rel_type, rel_type)
+                                continue
+                            _add_edge(eid, nid, rel_type, rel_type)
+
+            elif from_type.lower() in ("deviceprofile", "device"):
+                res = execute_graph_query(conn, "get_device_neighbors", {"profile_id": eid})
+                if res.get("provenance"):
+                    provenance_list.append(res["provenance"])
+                for row in res.get("results", []):
+                    for item in row.get("@@results", []):
+                        iid = str(item).strip()
+                        if iid and iid != eid and iid not in ("nan", "nan_nan_nan"):
+                            itype, ilabel = _classify_entity_id(iid)
+                            _add_node(iid, itype, ilabel, suspicious=False, badge="CONNECTED")
+                            if itype == "Card":
+                                _add_edge(eid, iid, "CONNECTED_TO", "CONNECTED_TO")
+                            elif itype == "Transaction":
+                                _add_edge(iid, eid, "FROM_DEVICE", "FROM_DEVICE")
+
+            elif from_type.lower() in ("card",):
+                res = execute_graph_query(conn, "get_card_history", {"card_id": eid, "days": 30})
+                if res.get("provenance"):
+                    provenance_list.append(res["provenance"])
+                # Also check Customer for this card
+                if "-" in eid:
+                    cust_id = eid.split("-")[0]
+                    _add_node(cust_id, "Customer", f"Customer {cust_id}", badge="RELEVANT")
+                    _add_edge(cust_id, eid, "OWNS", "OWNS")
+                for row in res.get("results", []):
+                    for txn in row.get("txns", []):
+                        tid = str(txn.get("transaction_id", txn.get("v_id", ""))).strip()
+                        if tid:
+                            _add_node(tid, "Transaction", f"Txn #{tid}", badge="SUPPORTING EVIDENCE", props=txn.get("attributes", txn))
+                            _add_edge(eid, tid, "MADE", "MADE")
+
+            elif from_type.lower() in ("customer",):
+                res = execute_graph_query(conn, "get_customer_transactions", {"customer_id": eid, "max_limit": 50})
+                if res.get("provenance"):
+                    provenance_list.append(res["provenance"])
+                # Customer owns cards
+                try:
+                    cust_edges = conn.getEdges("Customer", eid) or []
+                    for ce in cust_edges:
+                        cid = str(ce.get("to_id", ""))
+                        if cid:
+                            _add_node(cid, "Card", f"Card {cid}", badge="CONNECTED")
+                            _add_edge(eid, cid, "OWNS", "OWNS")
+                except Exception:
+                    pass
+
+        except Exception as e:
+            logger.error(f"expand_entity_neighbors failed on TigerGraph: {e}")
+
     return {
-        "success": False,
-        "error": res.get("error", "Expansion query failed"),
-        "results": [],
+        "success": True,
         "entity_id": eid,
-        "entity_ids": [eid],
-        "entity_type": etype
+        "entity_type": from_type,
+        "nodes": list(nodes_map.values()),
+        "edges": edges_list,
+        "provenance": provenance_list[0] if provenance_list else {
+            "access_mode": get_graph_access_mode().value,
+            "provider": "TigerGraph",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
     }
+
+
+def _classify_entity_id(eid: str, default_type: str = "Entity") -> tuple[str, str]:
+    """Helper to classify entity ID string into type and human-readable label."""
+    s = str(eid).strip()
+    u = s.upper()
+    if "@" in s or s.endswith((".com", ".net", ".org", ".edu", ".io")):
+        return "EmailDomain", f"Domain @{s}"
+    elif any(k in s.lower() for k in ("chrome", "android", "windows", "ios", "mac", "linux", "safari", "firefox", "mobile")):
+        return "DeviceProfile", f"Device {s[:18]}"
+    elif s.endswith(".0") and s.replace(".", "", 1).isdigit():
+        return "BillingRegion", f"Region {s}"
+    elif u.startswith("T_") or (s.isdigit() and len(s) >= 6):
+        return "Transaction", f"Txn #{s}"
+    elif "CARD" in u or (u.startswith("C") and "-K" in u) or ("_" in u and any(c in u.lower() for c in ("visa", "mastercard", "discover", "amex", "debit", "credit"))):
+        return "Card", f"Card {s}"
+    elif (u.startswith("C") and s[1:].isdigit()) or u.startswith("C0") or u.startswith("C_"):
+        return "Customer", f"Customer {s}"
+    elif u.startswith("CC-") or u.startswith("CASE-") or u.startswith("HHG-"):
+        return "ClosedCase", f"Case {s}"
+    elif u.startswith("FC-"):
+        return "FraudCase", f"Fraud {s}"
+    return default_type, f"{default_type} {s[:16]}"
+
