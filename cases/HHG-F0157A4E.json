@@ -1,13 +1,13 @@
 {
-  "case_id": "HHG-CUSTOM-01",
-  "txn_id": "T_TEST_002",
+  "case_id": "HHG-F0157A4E",
+  "txn_id": "T_LIST_002",
   "card_id": null,
   "customer_id": null,
   "trigger_type": "risk_score",
   "trigger_risk_score": null,
   "status": "RESOLVED",
-  "created_at": "2026-09-24T12:05:53.320150",
-  "updated_at": "2026-09-24T12:06:00.038419",
+  "created_at": "2026-09-24T11:52:59.356781",
+  "updated_at": "2026-09-24T11:53:02.578667",
   "initial_risk_level": "HIGH",
   "initial_fraud_probability": 0.728,
   "initial_confidence": 0.945,
@@ -23,10 +23,10 @@
       "source": "graph",
       "ref": "get_transaction",
       "entity_ids": [
-        "T_TEST_002"
+        "T_LIST_002"
       ],
       "confidence": 0.4,
-      "timestamp": "2026-09-24T12:05:54.553697",
+      "timestamp": "2026-09-24T11:52:59.591563",
       "raw_data": {
         "@@results": []
       },
@@ -41,7 +41,7 @@
         "__from_step_01__"
       ],
       "confidence": 0.5,
-      "timestamp": "2026-09-24T12:05:56.580194",
+      "timestamp": "2026-09-24T11:52:59.839141",
       "raw_data": {
         "shared_device_count": 1
       },
@@ -56,7 +56,7 @@
         "None"
       ],
       "confidence": 0.92,
-      "timestamp": "2026-09-24T12:05:57.071156",
+      "timestamp": "2026-09-24T11:53:00.078423",
       "raw_data": {
         "card_testing_detected": true
       },
@@ -69,7 +69,7 @@
       "ref": "search_similar_cases",
       "entity_ids": [],
       "confidence": 0.6,
-      "timestamp": "2026-09-24T12:05:57.324634",
+      "timestamp": "2026-09-24T11:53:00.322343",
       "raw_data": {
         "result_count": 1,
         "fraud_case_count": 0
@@ -83,7 +83,7 @@
       "ref": "evidence_request:REQ-001",
       "entity_ids": [],
       "confidence": 0.9,
-      "timestamp": "2026-09-24T12:05:57.913864",
+      "timestamp": "2026-09-24T11:53:00.942253",
       "raw_data": {
         "request_id": "REQ-001",
         "scenario": "deny"
@@ -96,10 +96,10 @@
       "source": "graph",
       "ref": "get_transaction",
       "entity_ids": [
-        "T_TEST_002"
+        "T_LIST_002"
       ],
       "confidence": 0.4,
-      "timestamp": "2026-09-24T12:05:58.163092",
+      "timestamp": "2026-09-24T11:53:01.183811",
       "raw_data": {
         "@@results": []
       },
@@ -114,7 +114,7 @@
         "__from_step_01__"
       ],
       "confidence": 0.5,
-      "timestamp": "2026-09-24T12:05:58.415333",
+      "timestamp": "2026-09-24T11:53:01.423220",
       "raw_data": {
         "shared_device_count": 1
       },
@@ -129,7 +129,7 @@
         "None"
       ],
       "confidence": 0.92,
-      "timestamp": "2026-09-24T12:05:58.694328",
+      "timestamp": "2026-09-24T11:53:01.740597",
       "raw_data": {
         "card_testing_detected": true
       },
@@ -142,7 +142,7 @@
       "ref": "search_similar_cases",
       "entity_ids": [],
       "confidence": 0.6,
-      "timestamp": "2026-09-24T12:05:58.947578",
+      "timestamp": "2026-09-24T11:53:01.990779",
       "raw_data": {
         "result_count": 1,
         "fraud_case_count": 0
@@ -252,67 +252,67 @@
     {
       "event_type": "CASE_CREATED",
       "description": "Investigation triggered by risk_score",
-      "timestamp": "2026-09-24T12:05:53.320150",
+      "timestamp": "2026-09-24T11:52:59.356781",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:TRIGGERED   INVESTIGATING",
       "description": "Building investigation plan",
-      "timestamp": "2026-09-24T12:05:53.320150",
+      "timestamp": "2026-09-24T11:52:59.356781",
       "metadata": {}
     },
     {
       "event_type": "INITIAL_ASSESSMENT",
       "description": "Initial risk: HIGH (73% probability)",
-      "timestamp": "2026-09-24T12:05:57.911425",
+      "timestamp": "2026-09-24T11:53:00.942253",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:INVESTIGATING   AWAITING_EVIDENCE",
       "description": "Requesting additional evidence",
-      "timestamp": "2026-09-24T12:05:57.911425",
+      "timestamp": "2026-09-24T11:53:00.942253",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:AWAITING_EVIDENCE   REASSESSING",
       "description": "New evidence received \u2014 reassessing",
-      "timestamp": "2026-09-24T12:05:57.913864",
+      "timestamp": "2026-09-24T11:53:00.942253",
       "metadata": {}
     },
     {
       "event_type": "FINAL_ASSESSMENT",
       "description": "Final risk: CRITICAL (100% probability)",
-      "timestamp": "2026-09-24T12:06:00.038419",
+      "timestamp": "2026-09-24T11:53:02.578667",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:REASSESSING   ACTION_RECOMMENDED",
       "description": "Generating Next-Best-Action",
-      "timestamp": "2026-09-24T12:06:00.038419",
+      "timestamp": "2026-09-24T11:53:02.578667",
       "metadata": {}
     },
     {
       "event_type": "NBA_INITIAL",
       "description": "NBA generated: ['MONITOR_ACCOUNT', 'CREATE_CASE', 'BLOCK_CARD', 'WARN_CUSTOMER']",
-      "timestamp": "2026-09-24T12:06:00.038419",
+      "timestamp": "2026-09-24T11:53:02.578667",
       "metadata": {}
     },
     {
       "event_type": "NBA_FINAL",
       "description": "NBA generated: ['BLOCK_CARD', 'BLOCK_TRANSACTION', 'MONITOR_ACCOUNT', 'CREATE_CASE', 'WARN_CUSTOMER']",
-      "timestamp": "2026-09-24T12:06:00.038419",
+      "timestamp": "2026-09-24T11:53:02.578667",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:ACTION_RECOMMENDED   AWAITING_APPROVAL",
       "description": "Awaiting L1 analyst approval",
-      "timestamp": "2026-09-24T12:06:00.038419",
+      "timestamp": "2026-09-24T11:53:02.578667",
       "metadata": {}
     },
     {
       "event_type": "STATUS_CHANGE:AWAITING_APPROVAL   RESOLVED",
       "description": "Case resolved: FRAUD",
-      "timestamp": "2026-09-24T12:06:00.038419",
+      "timestamp": "2026-09-24T11:53:02.578667",
       "metadata": {}
     }
   ],
@@ -416,8 +416,8 @@
   ],
   "graphrag_context": {
     "investigation": {
-      "case_id": "HHG-CUSTOM-01",
-      "txn_id": "T_TEST_002",
+      "case_id": "HHG-F0157A4E",
+      "txn_id": "T_LIST_002",
       "trigger_type": "risk_score",
       "assessed_risk_level": "CRITICAL",
       "fraud_probability": 1.0,
@@ -601,9 +601,9 @@
     "pattern": "card_testing",
     "pattern_description": "",
     "affected_txn_ids": [
-      "T_TEST_002"
+      "T_LIST_002"
     ],
-    "first_suspicious_txn_id": "T_TEST_002",
+    "first_suspicious_txn_id": "T_LIST_002",
     "connected_card_ids": [],
     "connected_device_profiles": [],
     "exposure_usd": 0.0,
@@ -613,7 +613,7 @@
         "source": "graph",
         "ref": "get_transaction",
         "entity_ids": [
-          "T_TEST_002"
+          "T_LIST_002"
         ]
       },
       {
@@ -649,7 +649,7 @@
         "source": "graph",
         "ref": "get_transaction",
         "entity_ids": [
-          "T_TEST_002"
+          "T_LIST_002"
         ]
       },
       {
@@ -682,9 +682,9 @@
       "CC-4743",
       "CC-1523"
     ],
-    "summary": "Investigation for case HHG-CUSTOM-01 (Txn: T_TEST_002) detected card_testing pattern with 100.0% fraud probability based on 9 collected graph signals.",
+    "summary": "Investigation for case HHG-F0157A4E (Txn: T_LIST_002) detected card_testing pattern with 100.0% fraud probability based on 9 collected graph signals.",
     "written_to_graph": true,
-    "graph_case_id": "HHG-CUSTOM-01"
+    "graph_case_id": "HHG-F0157A4E"
   },
   "next_best_actions": {
     "initial": [
@@ -747,5 +747,5 @@
   ],
   "stop_reason": "Defensible decision reached with conclusive graph evidence",
   "tokens": 0,
-  "latency_s": 6.72
+  "latency_s": 3.22
 }

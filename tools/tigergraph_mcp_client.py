@@ -1,10 +1,10 @@
 """
 FraudLens — TigerGraph Model Context Protocol (MCP) Client Layer
 ================================================================
-Production-grade MCP Client integration using official `tigergraph-mcp`.
+Production-grade MCP Client integration using official `tigergraph-mcp` (v1.0.3).
 
 Provides:
-  - TigerGraph MCP session management & tool discovery
+  - TigerGraph MCP session management & dynamic tool discovery
   - Safe tool invocation with provenance generation
   - GraphAccessMode abstraction (MCP / DIRECT / AUTO)
   - Zero synthetic data fallback guarantees
@@ -14,17 +14,59 @@ Provides:
 from __future__ import annotations
 
 import asyncio
+import importlib.metadata
 import json
 import os
+import threading
 import time
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from dotenv import load_dotenv
 from loguru import logger
 
 load_dotenv()
+
+
+def get_mcp_package_version() -> str:
+    """Dynamically get installed tigergraph-mcp version."""
+    try:
+        return importlib.metadata.version("tigergraph-mcp")
+    except Exception:
+        try:
+            import tigergraph_mcp
+            return getattr(tigergraph_mcp, "__version__", "1.0.3")
+        except Exception:
+            return "1.0.3"
+
+
+class _WorkerLoop:
+    """Dedicated persistent event loop thread for async MCP tool executions."""
+    _instance: Optional[_WorkerLoop] = None
+    _lock = threading.Lock()
+
+    def __init__(self):
+        self.loop = asyncio.new_event_loop()
+        self.thread = threading.Thread(target=self.loop.run_forever, daemon=True, name="TigerGraphMCPWorker")
+        self.thread.start()
+
+    @classmethod
+    def get_instance(cls) -> _WorkerLoop:
+        with cls._lock:
+            if cls._instance is None or not cls._instance.thread.is_alive():
+                cls._instance = _WorkerLoop()
+            return cls._instance
+
+    def run_coroutine(self, coro_fn: Callable, *args, timeout: float = 15.0, **kwargs) -> Any:
+        async def _wrapper():
+            res = coro_fn(*args, **kwargs)
+            if asyncio.iscoroutine(res):
+                return await asyncio.wait_for(res, timeout=timeout)
+            return res
+
+        fut = asyncio.run_coroutine_threadsafe(_wrapper(), self.loop)
+        return fut.result(timeout=timeout + 2.0)
 
 
 class GraphAccessMode(str, Enum):
@@ -48,21 +90,66 @@ class TigerGraphMCPClient:
         self.secret = os.getenv("TG_SECRET", "")
         self.mode = os.getenv("FRAUDLENS_GRAPH_ACCESS_MODE", "auto").lower()
 
-        self._server = None
         self._connected = False
         self._tools: List[Dict[str, Any]] = []
         self._last_health_check: Optional[Dict[str, Any]] = None
         self._call_history: List[Dict[str, Any]] = []
+        self._version = get_mcp_package_version()
+        self._worker = _WorkerLoop.get_instance()
+
+    def _ensure_auth_env(self):
+        """Ensure TigerGraph auth tokens are populated in environment for tigergraph-mcp."""
+        if not os.getenv("TG_TOKEN") and not os.getenv("TG_API_TOKEN"):
+            if self.secret and self.secret != "your_secret_here":
+                try:
+                    import pyTigerGraph as tg
+                    is_cloud = "tgcloud.io" in self.host
+                    conn = tg.TigerGraphConnection(
+                        host=self.host,
+                        graphname=self.graphname,
+                        username=self.username,
+                        password=self.password,
+                        gsqlSecret=self.secret,
+                        tgCloud=is_cloud,
+                    )
+                    token = conn.getToken(self.secret)
+                    token_str = token[0] if isinstance(token, tuple) else str(token)
+                    if token_str and len(token_str) > 10:
+                        os.environ["TG_TOKEN"] = token_str
+                        os.environ["TG_API_TOKEN"] = token_str
+                        self.api_token = token_str
+                        logger.debug("Successfully refreshed TG token for MCP client")
+                except Exception as e:
+                    logger.debug(f"Could not fetch TG token in MCP client: {e}")
+
+    def _discover_tools(self) -> List[Dict[str, Any]]:
+        """Discover tools from official tigergraph_mcp tool registry."""
+        try:
+            from tigergraph_mcp.tools import tool_registry
+            all_tools = tool_registry.get_all_tools()
+            tools_list = []
+            for t in all_tools:
+                tools_list.append({
+                    "name": t.name,
+                    "description": t.description,
+                    "inputSchema": t.inputSchema if hasattr(t, "inputSchema") else {}
+                })
+            return tools_list
+        except Exception as e:
+            logger.warning(f"Could not discover tools from tool_registry: {e}")
+            try:
+                from tigergraph_mcp import TigerGraphToolName
+                return [{"name": t.value, "description": "", "inputSchema": {}} for t in TigerGraphToolName]
+            except Exception:
+                return []
 
     def connect(self) -> bool:
-        """Initialize MCP Server and discover available tools."""
+        """Initialize MCP tools and verify connectivity via real MCP tool invocation."""
         try:
-            from tigergraph_mcp.server import MCPServer
-            from tigergraph_mcp import TigerGraphToolName
+            self._ensure_auth_env()
+            self._tools = self._discover_tools()
 
-            self._server = MCPServer()
-            
-            # Test connectivity by querying vertex count on the target graph
+            # Verify connectivity by invoking official get_vertex_count tool
             test_res = self.call_tool(
                 tool_name="tigergraph__get_vertex_count",
                 arguments={"vertex_type": "Transaction", "graph_name": self.graphname},
@@ -71,11 +158,10 @@ class TigerGraphMCPClient:
 
             if test_res.get("success"):
                 self._connected = True
-                self._tools = [{"name": t.value} for t in TigerGraphToolName]
                 logger.info(f"TigerGraph MCP Connected to {self.host}/{self.graphname} — {len(self._tools)} tools discovered")
                 return True
             else:
-                err = test_res.get("error") or test_res.get("summary")
+                err = test_res.get("error") or test_res.get("summary") or "Connection probe returned unsuccessful"
                 logger.warning(f"TigerGraph MCP tool test failed: {err}")
                 self._connected = False
                 return False
@@ -93,11 +179,7 @@ class TigerGraphMCPClient:
     def list_tools(self) -> List[Dict[str, Any]]:
         """Return list of discovered TigerGraph MCP tools."""
         if not self._tools:
-            try:
-                from tigergraph_mcp import TigerGraphToolName
-                self._tools = [{"name": t.value} for t in TigerGraphToolName]
-            except Exception:
-                self._tools = []
+            self._tools = self._discover_tools()
         return self._tools
 
     def health_check(self) -> Dict[str, Any]:
@@ -107,19 +189,29 @@ class TigerGraphMCPClient:
         tool_count = len(self._tools) if self._tools else 0
 
         status = {
-            "enabled": True,
+            "available": is_conn,
             "connected": is_conn,
             "server": "tigergraph-mcp",
-            "version": "1.0.3",
+            "version": self._version,
+            "transport": "stdio/in-process",
             "graph_name": self.graphname,
             "host": self.host.replace("https://", "").replace("http://", "").split("/")[0],
             "tool_count": tool_count if is_conn else 0,
+            "discovered_tools": [t["name"] for t in self._tools] if is_conn else [],
             "access_mode": self.mode,
             "last_check": now,
-            "error": None if is_conn else "MCP server connection or tool execution test failed"
+            "last_error": None if is_conn else "MCP server connection or tool execution test failed"
         }
         self._last_health_check = status
         return status
+
+    def _get_tool_function(self, tool_name: str) -> Optional[Callable]:
+        """Resolve tool function from tigergraph_mcp.tools without private methods."""
+        clean_name = tool_name.replace("tigergraph__", "")
+        import tigergraph_mcp.tools as tg_tools
+        if hasattr(tg_tools, clean_name):
+            return getattr(tg_tools, clean_name)
+        return None
 
     def call_tool(
         self,
@@ -128,42 +220,41 @@ class TigerGraphMCPClient:
         timeout: float = 15.0
     ) -> Dict[str, Any]:
         """
-        Execute an MCP tool synchronously with timeout and structured provenance.
+        Execute an official MCP tool with timeout and structured provenance.
         """
         start_time = time.time()
         timestamp = datetime.now(timezone.utc).isoformat()
+        self._ensure_auth_env()
 
-        # Ensure graph_name is set
         args = dict(arguments)
         if "graph_name" not in args:
             args["graph_name"] = self.graphname
 
+        tool_fn = self._get_tool_function(tool_name)
+        if tool_fn is None:
+            err_msg = f"Unknown MCP tool: '{tool_name}'"
+            logger.error(err_msg)
+            prov = {
+                "access_mode": "mcp",
+                "provider": "TigerGraph MCP",
+                "tool": tool_name,
+                "parameters": args,
+                "timestamp": timestamp,
+                "latency_ms": 0.0,
+                "success": False,
+                "error": err_msg
+            }
+            self._record_call(prov)
+            return {"success": False, "error": err_msg, "results": [], "provenance": prov}
+
         try:
-            if not self._server:
-                from tigergraph_mcp.server import MCPServer
-                self._server = MCPServer()
-
-            # Execute the tool via MCPServer
-            res_or_coro = self._server._handle_call_tool(tool_name, args)
-            
-            if asyncio.iscoroutine(res_or_coro):
-                try:
-                    loop = asyncio.get_running_loop()
-                except RuntimeError:
-                    loop = None
-
-                if loop and loop.is_running():
-                    import nest_asyncio
-                    nest_asyncio.apply()
-                    res_raw = loop.run_until_complete(asyncio.wait_for(res_or_coro, timeout=timeout))
-                else:
-                    res_raw = asyncio.run(asyncio.wait_for(res_or_coro, timeout=timeout))
-            else:
-                res_raw = res_or_coro
+            # Execute async tool function safely in persistent worker event loop
+            res_raw = self._worker.run_coroutine(tool_fn, timeout=timeout, **args)
 
             latency_ms = round((time.time() - start_time) * 1000, 2)
             parsed_data = self._parse_mcp_text_content(res_raw)
 
+            prov_success = parsed_data.get("success", True)
             provenance = {
                 "access_mode": "mcp",
                 "provider": "TigerGraph MCP",
@@ -171,7 +262,7 @@ class TigerGraphMCPClient:
                 "parameters": {k: v for k, v in args.items() if k not in ("token", "password", "secret")},
                 "timestamp": timestamp,
                 "latency_ms": latency_ms,
-                "success": parsed_data.get("success", True)
+                "success": prov_success
             }
 
             self._record_call(provenance)
@@ -256,7 +347,6 @@ class TigerGraphMCPClient:
         if isinstance(res_raw, list) and len(res_raw) > 0:
             item = res_raw[0]
             text = getattr(item, "text", str(item))
-            # Extract JSON code block if wrapped in ```json ... ```
             if "```json" in text:
                 try:
                     json_str = text.split("```json")[1].split("```")[0].strip()

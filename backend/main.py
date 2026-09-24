@@ -589,508 +589,72 @@ async def get_graph_data(
 
 def _build_graph(case_data: dict, hops: int = 1, root: Optional[str] = None) -> GraphResponse:
     """
-    Build a rich GraphResponse from REAL TigerGraph data and case evidence — zero synthetic node generation.
+    Build a rich GraphResponse from REAL TigerGraph data using GraphAccessManager — zero synthetic node generation.
     Extracts all real multi-hop entities (Customer, Card, Transaction, DeviceProfile, Connected Card,
-    BillingRegion, EmailDomain, Related Transactions, ClosedCases) using live TigerGraph queries
-    and case evidence.
+    BillingRegion, EmailDomain, Related Transactions, ClosedCases) with accurate MCP/Direct runtime provenance.
     """
-    nodes: dict[str, GraphNode] = {}
-    suspicious_node_ids: set[str] = set()
-    pair_edge_map: dict[tuple[str, str, str], GraphEdge] = {}
-    mcp_call_count = 0
+    from tools.graph_access_manager import get_graph_access_manager
+    gam = get_graph_access_manager()
+    res = gam.build_investigation_graph(case_data, hops=hops)
 
-    txn_id = str(case_data.get("txn_id") or "").strip()
-    card_id = str(case_data.get("card_id") or "").strip()
-    customer_id = str(case_data.get("customer_id") or "").strip()
-    pattern = str(case_data.get("pattern") or "unknown")
-    final_verdict = str(case_data.get("final_verdict") or "unknown")
-    final_prob = float(case_data.get("final_fraud_probability") or 0.0)
-    evidence_list = case_data.get("evidence", [])
-    case_inner = case_data.get("case", {})
+    graph_nodes = []
+    for n in res.get("nodes", []):
+        graph_nodes.append(GraphNode(
+            id=n["id"],
+            type=n["type"],
+            label=n["label"],
+            suspicious=n.get("suspicious", False),
+            status_badge=n.get("status_badge", "LEGITIMATE"),
+            properties=n.get("properties", {})
+        ))
 
-    is_fraud = final_verdict == "fraud" or final_prob >= 0.50
+    graph_edges = []
+    for e in res.get("edges", []):
+        graph_edges.append(GraphEdge(
+            source=e["source"],
+            target=e["target"],
+            type=e["type"],
+            label=e.get("label", e["type"]),
+            suspicious=e.get("suspicious", False),
+            provenance=e.get("provenance", {"source": "TigerGraph", "relationship": e["type"]})
+        ))
 
-    # Clean edge helper
-    def add_edge(u: str, v: str, edge_type: str, label: Optional[str] = None, is_suspicious: bool = False):
-        if not u or not v or u == v or u in ("nan", "nan_nan_nan") or v in ("nan", "nan_nan_nan"):
-            return
-        if u not in nodes or v not in nodes:
-            return
-        edge_key = (u, v, edge_type)
-        if edge_key not in pair_edge_map:
-            pair_edge_map[edge_key] = GraphEdge(
-                source=u,
-                target=v,
-                type=edge_type,
-                label=label or edge_type,
-                suspicious=is_suspicious,
-                provenance={"source": "TigerGraph", "relationship": edge_type}
-            )
+    if root and any(n.id == root for n in graph_nodes):
+        from collections import deque
+        adj: dict[str, set[str]] = {}
+        for edge in graph_edges:
+            adj.setdefault(edge.source, set()).add(edge.target)
+            adj.setdefault(edge.target, set()).add(edge.source)
 
-    # Clean node helper
-    def add_node(vid: str, vtype: str, label: str, suspicious: bool = False, badge: str = "LEGITIMATE", props: Optional[dict] = None):
-        if not vid or vid in ("nan", "nan_nan_nan", "None", ""):
-            return
-        if vid not in nodes:
-            default_props = {"id": vid, "type": vtype, "source": "TigerGraph"}
-            if props:
-                default_props.update({k: v for k, v in props.items() if v is not None and str(v) != "nan"})
-            nodes[vid] = GraphNode(
-                id=vid,
-                type=vtype,
-                label=label,
-                suspicious=suspicious,
-                status_badge=badge,
-                properties=default_props
-            )
-            if suspicious:
-                suspicious_node_ids.add(vid)
+        visited: set[str] = {root}
+        queue = deque([(root, 0)])
+        while queue:
+            curr, depth = queue.popleft()
+            if depth < hops:
+                for neighbor in adj.get(curr, set()):
+                    if neighbor not in visited:
+                        visited.add(neighbor)
+                        queue.append((neighbor, depth + 1))
 
-    # 1. Derive Customer ID if missing
-    if not customer_id or customer_id in ("None", ""):
-        if card_id and "-" in card_id:
-            customer_id = card_id.split("-")[0]
+        graph_nodes = [n for n in graph_nodes if n.id in visited]
+        graph_edges = [e for e in graph_edges if e.source in visited and e.target in visited]
 
-    # Try live TigerGraph query to fetch real multi-hop neighborhood
-    tg_conn = None
-    try:
-        from tools.graph_tools import (
-            get_tg_connection,
-            get_transaction,
-            get_transaction_neighbors,
-            get_card_history,
-            get_device_neighbors,
-            get_customer_transactions,
-            get_graph_access_mode,
-        )
-        tg_conn = get_tg_connection()
-    except Exception as e:
-        logger.warning(f"Could not connect to TigerGraph in _build_graph: {e}")
-
-    live_devices: set[str] = set()
-    live_connected_cards: set[str] = set()
-    live_related_txns: set[str] = set()
-    live_regions: set[str] = set()
-    live_emails: set[str] = set()
-
-    if tg_conn is not None:
-        try:
-            # Query Transaction vertex & direct edges
-            if txn_id:
-                try:
-                    txn_data_arr = tg_conn.getVerticesById("Transaction", [txn_id])
-                    if txn_data_arr and len(txn_data_arr) > 0 and "attributes" in txn_data_arr[0]:
-                        t_attrs = txn_data_arr[0]["attributes"]
-                        add_node(
-                            txn_id,
-                            "Transaction",
-                            f"Txn #{txn_id}" + (" (FLAGGED)" if is_fraud else ""),
-                            suspicious=is_fraud,
-                            badge="FLAGGED" if is_fraud else "LEGITIMATE",
-                            props=t_attrs
-                        )
-                    txn_edges = tg_conn.getEdges("Transaction", txn_id) or []
-                    for te in txn_edges:
-                        to_id = str(te.get("to_id", "")).strip()
-                        to_type = str(te.get("to_type", ""))
-                        e_type = str(te.get("e_type", ""))
-                        if to_id and to_id not in ("nan", "nan_nan_nan"):
-                            if to_type == "DeviceProfile" or e_type == "FROM_DEVICE":
-                                live_devices.add(to_id)
-                            elif to_type == "EmailDomain" or e_type == "PURCHASER_EMAIL":
-                                live_emails.add(to_id)
-                            elif to_type == "BillingRegion" or e_type == "BILLED_IN":
-                                live_regions.add(to_id)
-                except Exception as e:
-                    logger.debug(f"Direct txn query info: {e}")
-
-                # Query transaction neighbors (1 to N hops)
-                try:
-                    n_res = get_transaction_neighbors(tg_conn, txn_id, hops=hops)
-                    mcp_call_count += 1
-                    for row in n_res.get("results", []):
-                        for neighbor in row.get("@@neighbors", []):
-                            nid = str(neighbor).strip()
-                            if nid and nid != txn_id and nid not in ("nan", "nan_nan_nan"):
-                                ntype, _ = _classify_entity(nid)
-                                if ntype == "DeviceProfile":
-                                    live_devices.add(nid)
-                                elif ntype == "EmailDomain":
-                                    live_emails.add(nid)
-                                elif ntype == "BillingRegion":
-                                    live_regions.add(nid)
-                                elif ntype == "Card" and nid != card_id:
-                                    live_connected_cards.add(nid)
-                                elif ntype == "Transaction":
-                                    live_related_txns.add(nid)
-                except Exception as e:
-                    logger.debug(f"Transaction neighbors query info: {e}")
-
-            # Query Card vertex & direct edges
-            if card_id:
-                try:
-                    card_data_arr = tg_conn.getVerticesById("Card", [card_id])
-                    card_props = card_data_arr[0].get("attributes", {}) if card_data_arr else {}
-                    add_node(
-                        card_id,
-                        "Card",
-                        f"Card {card_id}",
-                        suspicious=is_fraud,
-                        badge="FLAGGED" if is_fraud else "LEGITIMATE",
-                        props=card_props
-                    )
-                    card_edges = tg_conn.getEdges("Card", card_id) or []
-                    for ce in card_edges:
-                        to_id = str(ce.get("to_id", "")).strip()
-                        if to_id and to_id != txn_id:
-                            live_related_txns.add(to_id)
-                except Exception as e:
-                    logger.debug(f"Direct card query info: {e}")
-
-            # Query Customer vertex & direct edges
-            if customer_id:
-                try:
-                    cust_data_arr = tg_conn.getVerticesById("Customer", [customer_id])
-                    cust_props = cust_data_arr[0].get("attributes", {}) if cust_data_arr else {}
-                    add_node(
-                        customer_id,
-                        "Customer",
-                        f"Customer {customer_id}",
-                        suspicious=False,
-                        badge="LEGITIMATE",
-                        props=cust_props
-                    )
-                    cust_edges = tg_conn.getEdges("Customer", customer_id) or []
-                    for ce in cust_edges:
-                        to_id = str(ce.get("to_id", "")).strip()
-                        if to_id and to_id != card_id:
-                            live_connected_cards.add(to_id)
-                except Exception as e:
-                    logger.debug(f"Direct customer query info: {e}")
-
-            # Query Device neighbors (hops >= 2)
-            if hops >= 2:
-                for dev_id in list(live_devices)[:3]:
-                    try:
-                        d_res = get_device_neighbors(tg_conn, dev_id)
-                        mcp_call_count += 1
-                        for row in d_res.get("results", []):
-                            for item in row.get("@@results", []):
-                                iid = str(item).strip()
-                                if iid and iid != dev_id and iid not in ("nan", "nan_nan_nan"):
-                                    itype, _ = _classify_entity(iid)
-                                    if itype == "Card" and iid != card_id:
-                                        live_connected_cards.add(iid)
-                                    elif itype == "Transaction" and iid != txn_id:
-                                        live_related_txns.add(iid)
-                    except Exception as e:
-                        logger.debug(f"Device neighbors query info: {e}")
-
-        except Exception as e:
-            logger.warning(f"Error during live TigerGraph subgraph traversal: {e}")
-
-    # Fallback / Merge from case evidence & raw_data
-    for dev_s in (case_inner.get("connected_device_profiles") or []):
-        if dev_s and str(dev_s).lower() != "nan_nan_nan":
-            live_devices.add(str(dev_s))
-    for card_s in (case_inner.get("connected_card_ids") or []):
-        if card_s and str(card_s) != card_id:
-            live_connected_cards.add(str(card_s))
-    if case_inner.get("billing_region"):
-        live_regions.add(str(case_inner.get("billing_region")))
-    if case_inner.get("email_domain"):
-        live_emails.add(str(case_inner.get("email_domain")))
-
-    for ev in evidence_list:
-        raw = ev.get("raw_data") or {}
-        if isinstance(raw, dict):
-            for res_key in ("@@results", "@@neighbors", "results", "txns"):
-                arr = raw.get(res_key)
-                if isinstance(arr, list):
-                    for item in arr:
-                        if isinstance(item, str):
-                            item_clean = item.strip()
-                            if "@" in item_clean or item_clean.endswith((".com", ".net", ".org", ".edu", ".io")):
-                                if item_clean.lower() != "nan":
-                                    live_emails.add(item_clean)
-                            elif any(k in item_clean.lower() for k in ("chrome", "android", "windows", "ios", "mac", "linux", "safari", "firefox")):
-                                if item_clean.lower() != "nan_nan_nan":
-                                    live_devices.add(item_clean)
-                            elif item_clean.endswith(".0") and item_clean.replace(".", "", 1).isdigit():
-                                live_regions.add(item_clean)
-                            elif item_clean.startswith("C") and "-K" in item_clean and item_clean != card_id:
-                                live_connected_cards.add(item_clean)
-                            elif item_clean.isdigit() and len(item_clean) >= 6 and item_clean != txn_id:
-                                live_related_txns.add(item_clean)
-
-        for eid in (ev.get("entity_ids") or []):
-            if isinstance(eid, str):
-                eid_s = eid.strip()
-                if eid_s.startswith("C") and "-K" in eid_s and eid_s != card_id:
-                    live_connected_cards.add(eid_s)
-                elif any(k in eid_s.lower() for k in ("chrome", "android", "windows", "ios", "device", "fp")):
-                    if eid_s.lower() != "nan_nan_nan":
-                        live_devices.add(eid_s)
-
-    # 1. Customer node
-    if customer_id:
-        add_node(
-            customer_id,
-            "Customer",
-            f"Customer {customer_id}",
-            suspicious=False,
-            badge="LEGITIMATE",
-            props={"customer_id": customer_id, "source": "TigerGraph"}
-        )
-
-    # 2. Card node
-    if card_id:
-        add_node(
-            card_id,
-            "Card",
-            f"Card {card_id}",
-            suspicious=is_fraud,
-            badge="FLAGGED" if is_fraud else "LEGITIMATE",
-            props={
-                "card_id": card_id,
-                "pattern": pattern.replace("_", " ").title(),
-                "status": "FLAGGED" if is_fraud else "MONITORED",
-                "customer": customer_id or "—",
-                "source": "TigerGraph",
-            }
-        )
-
-    # 3. Flagged Transaction node
-    if txn_id:
-        real_amount = _extract_amount_from_evidence(evidence_list)
-        real_risk = _extract_risk_score_from_evidence(evidence_list)
-        add_node(
-            txn_id,
-            "Transaction",
-            f"Txn #{txn_id}" + (" (FLAGGED)" if is_fraud else ""),
-            suspicious=is_fraud,
-            badge="FLAGGED" if is_fraud else "LEGITIMATE",
-            props={
-                "transaction_id": txn_id,
-                "amount": real_amount or "$191.00",
-                "risk_score": f"{real_risk:.2f}" if real_risk else "—",
-                "verdict": final_verdict.upper(),
-                "fraud_probability": f"{final_prob*100:.0f}%",
-                "card": card_id or "—",
-                "source": "TigerGraph",
-            }
-        )
-
-    # 4. Device Profile nodes
-    is_dev_suspicious = is_fraud and (pattern in ("account_takeover", "shared_device_ring", "card_testing") or len(live_connected_cards) > 0)
-    for dev_id in list(live_devices)[:4]:
-        dev_props = {"device_id": dev_id, "profile_id": dev_id, "source": "TigerGraph"}
-        if tg_conn is not None:
-            try:
-                dv = tg_conn.getVerticesById("DeviceProfile", [dev_id])
-                if dv and len(dv) > 0 and "attributes" in dv[0]:
-                    dev_props.update(dv[0]["attributes"])
-            except Exception:
-                pass
-        add_node(
-            dev_id,
-            "DeviceProfile",
-            f"Device {dev_id[:18]}",
-            suspicious=is_dev_suspicious,
-            badge="SUSPICIOUS (SHARED)" if is_dev_suspicious else "CONNECTED",
-            props=dev_props
-        )
-
-    # 5. Connected Cards (Multi-Hop)
-    for conn_card in list(live_connected_cards)[:5]:
-        if conn_card == card_id:
-            continue
-        add_node(
-            conn_card,
-            "Card",
-            f"Card {conn_card}",
-            suspicious=is_fraud,
-            badge="SUSPICIOUS (RING)" if is_fraud else "CONNECTED",
-            props={
-                "card_id": conn_card,
-                "status": "CONNECTED_DEVICE_LINK",
-                "relationship": "Shared Hardware Fingerprint",
-                "source": "TigerGraph"
-            }
-        )
-
-    # 6. Related Transactions (Multi-Hop)
-    for rel_txn in list(live_related_txns)[:4]:
-        if rel_txn == txn_id:
-            continue
-        add_node(
-            rel_txn,
-            "Transaction",
-            f"Txn #{rel_txn}",
-            suspicious=False,
-            badge="SUPPORTING EVIDENCE",
-            props={"transaction_id": rel_txn, "card": card_id or "—", "source": "TigerGraph"}
-        )
-
-    # 7. Email Domains
-    for domain in list(live_emails)[:2]:
-        add_node(
-            domain,
-            "EmailDomain",
-            f"Domain @{domain}",
-            suspicious=False,
-            badge="CONNECTED",
-            props={"domain": domain, "type": "Email Domain", "source": "TigerGraph"}
-        )
-
-    # 8. Billing Regions
-    for reg in list(live_regions)[:2]:
-        add_node(
-            reg,
-            "BillingRegion",
-            f"Region {reg}",
-            suspicious=False,
-            badge="CONNECTED",
-            props={"region_code": reg, "country": "US", "source": "TigerGraph"}
-        )
-
-    # 9. ClosedCase nodes (from historical memory / GraphRAG)
-    sim_cases = case_data.get("similar_cases", [])
-    for sim in sim_cases[:3]:
-        cid = sim.get("case_id")
-        if cid:
-            sim_score = sim.get("similarity_score") or sim.get("hybrid_score") or 0.0
-            pat = sim.get("pattern", "").replace("_", " ").title()
-            is_case_fraud = sim.get("outcome") == "confirmed_fraud"
-            add_node(
-                cid,
-                "ClosedCase",
-                f"Case {cid}",
-                suspicious=is_case_fraud,
-                badge="HISTORICAL FRAUD" if is_case_fraud else "HISTORICAL CASE",
-                props={
-                    "case_id": cid,
-                    "pattern": pat,
-                    "outcome": sim.get("outcome", "unknown"),
-                    "similarity_score": f"{sim_score:.3f}",
-                    "actions_taken": ", ".join(sim.get("actions_taken") or []),
-                    "notes": sim.get("analyst_notes_excerpt", "")[:120],
-                    "source": "TigerGraph ClosedCase"
-                }
-            )
-
-    # --- Edge Connections with Real TigerGraph Schema Edge Types ---
-    if customer_id in nodes and card_id in nodes:
-        add_edge(customer_id, card_id, "OWNS", "OWNS", is_suspicious=is_fraud)
-
-    if card_id in nodes and txn_id in nodes:
-        add_edge(card_id, txn_id, "MADE", "MADE", is_suspicious=is_fraud)
-
-    for dev_id in live_devices:
-        if dev_id in nodes and txn_id in nodes:
-            add_edge(txn_id, dev_id, "FROM_DEVICE", "FROM_DEVICE", is_suspicious=is_dev_suspicious)
-        if dev_id in nodes and card_id in nodes:
-            add_edge(card_id, dev_id, "USED_DEVICE", "USED_DEVICE", is_suspicious=is_dev_suspicious)
-        for conn_card in live_connected_cards:
-            if conn_card in nodes and dev_id in nodes:
-                add_edge(dev_id, conn_card, "CONNECTED_TO", "CONNECTED_TO", is_suspicious=is_fraud)
-
-    for domain in live_emails:
-        if domain in nodes and txn_id in nodes:
-            add_edge(txn_id, domain, "PURCHASER_EMAIL", "PURCHASER_EMAIL")
-
-    for reg in live_regions:
-        if reg in nodes and txn_id in nodes:
-            add_edge(txn_id, reg, "BILLED_IN", "BILLED_IN")
-
-    for rel_txn in live_related_txns:
-        if rel_txn in nodes:
-            if card_id in nodes:
-                add_edge(card_id, rel_txn, "ON_CARD", "ON_CARD")
-            for dev_id in live_devices:
-                if dev_id in nodes:
-                    add_edge(dev_id, rel_txn, "FROM_DEVICE", "FROM_DEVICE")
-
-    for sim in sim_cases[:3]:
-        cid = sim.get("case_id")
-        if cid in nodes:
-            if card_id in nodes:
-                add_edge(card_id, cid, "SIMILAR_TO", "SIMILAR_TO", is_suspicious=sim.get("outcome") == "confirmed_fraud")
-            elif txn_id in nodes:
-                add_edge(txn_id, cid, "SIMILAR_TO", "SIMILAR_TO", is_suspicious=sim.get("outcome") == "confirmed_fraud")
-
-    edges = list(pair_edge_map.values())
-
-    # Primary Suspicious Path
-    path = [n for n in [customer_id, card_id, txn_id] if n in nodes]
-    for dev in live_devices:
-        if dev in nodes and dev not in path:
-            path.append(dev)
-    for conn in live_connected_cards:
-        if conn in nodes and conn not in path:
-            path.append(conn)
-
-    # Root entity filtering
-    if root and root in nodes:
-        reachable = {root}
-        current_layer = {root}
-        for _ in range(hops):
-            next_layer = set()
-            for e in edges:
-                if e.source in current_layer:
-                    next_layer.add(e.target)
-                if e.target in current_layer:
-                    next_layer.add(e.source)
-            reachable.update(next_layer)
-            current_layer = next_layer
-
-        filtered_nodes = [n for n in nodes.values() if n.id in reachable]
-        filtered_edges = [e for e in edges if e.source in reachable and e.target in reachable]
-        return GraphResponse(
-            nodes=filtered_nodes,
-            edges=filtered_edges,
-            highlighted_paths=[path] if len(path) >= 2 else [],
-            suspicious_nodes=[n for n in suspicious_node_ids if n in reachable],
-            suspicious_edges=[
-                f"{e.source}-{e.target}" for e in filtered_edges
-                if e.source in suspicious_node_ids and e.target in suspicious_node_ids
-            ],
-            hops=hops,
-            access_mode="DIRECT" if tg_conn is not None else "OFFLINE_CACHE",
-            mcp_calls=mcp_call_count,
-            tg_status="CONNECTED" if tg_conn is not None else "DISCONNECTED",
-            root_entity_id=root,
-            summary=f"{len(filtered_nodes)} entities and {len(filtered_edges)} relationships explored at {hops}-hop depth from {root}."
-        )
-
-    mode_str = "DIRECT"
-    try:
-        from tools.graph_tools import get_graph_access_mode
-        mode_str = get_graph_access_mode().value.upper()
-    except Exception:
-        pass
-
-    summary_text = f"{len(nodes)} real entities and {len(edges)} multi-hop relationships extracted from TigerGraph."
-    if len(live_connected_cards) > 0:
-        summary_text += f" Detected {len(live_connected_cards)} connected card identities sharing hardware profile."
+    suspicious_nodes = [n.id for n in graph_nodes if n.suspicious]
+    suspicious_edges = [f"{e.source}-{e.target}" for e in graph_edges if e.suspicious]
 
     return GraphResponse(
-        nodes=list(nodes.values()),
-        edges=edges,
-        highlighted_paths=[path] if len(path) >= 2 else [],
-        suspicious_nodes=list(suspicious_node_ids),
-        suspicious_edges=[
-            f"{e.source}-{e.target}" for e in edges
-            if e.source in suspicious_node_ids and e.target in suspicious_node_ids
-        ],
+        nodes=graph_nodes,
+        edges=graph_edges,
+        highlighted_paths=[],
+        suspicious_nodes=suspicious_nodes,
+        suspicious_edges=suspicious_edges,
         hops=hops,
-        access_mode=mode_str if tg_conn is not None else "OFFLINE_CACHE",
-        mcp_calls=mcp_call_count,
-        tg_status="CONNECTED" if tg_conn is not None else "DISCONNECTED",
-        root_entity_id=txn_id or card_id or customer_id,
-        summary=summary_text
+        access_mode=res.get("access_mode", "DIRECT"),
+        mcp_calls=res.get("mcp_calls", 0),
+        tg_status=res.get("tg_status", "CONNECTED"),
+        root_entity_id=root or case_data.get("flagged_txn_id") or case_data.get("card_id"),
+        summary=res.get("insight") or f"{len(graph_nodes)} entities and {len(graph_edges)} relationships retrieved from TigerGraph."
     )
-
 
 def _extract_amount_from_evidence(evidence_list: list[dict]) -> str:
     """Extract real transaction amount from evidence raw_data."""
@@ -1144,6 +708,7 @@ def _classify_entity(eid: str) -> tuple[str, str]:
 
 
 @app.get("/api/investigations/{case_id}/graph/expand")
+@app.post("/api/investigations/{case_id}/graph/expand")
 async def expand_graph(
     case_id: str,
     entity_id: str = Query(..., description="Entity ID to expand"),
@@ -1151,7 +716,7 @@ async def expand_graph(
     hops: int = Query(1, ge=1, le=3, description="Number of hops to expand (1-3)"),
 ):
     """
-    Expand neighbors of a graph node using live TigerGraph data.
+    Expand neighbors of a graph node using live TigerGraph data via GraphAccessManager.
     Returns new nodes and edges to merge into the current graph visualization.
     No synthetic data — purely from TigerGraph query results.
     """
@@ -1160,26 +725,10 @@ async def expand_graph(
     if not case_data:
         raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
 
-    tg_conn = None
+    from tools.graph_access_manager import get_graph_access_manager
+    gam = get_graph_access_manager()
     try:
-        from tools.graph_tools import get_tg_connection, expand_entity_neighbors
-        tg_conn = get_tg_connection()
-    except Exception as e:
-        logger.warning(f"TigerGraph not available for expansion: {e}")
-
-    if tg_conn is None:
-        return {
-            "case_id": case_id,
-            "entity_id": entity_id,
-            "entity_type": entity_type,
-            "nodes": [],
-            "edges": [],
-            "source": "no_tg_connection",
-            "message": "TigerGraph connection not available — expansion requires live database",
-        }
-
-    try:
-        result = expand_entity_neighbors(tg_conn, entity_id, entity_type, hops=hops)
+        result = gam.expand_neighbors(entity_id=entity_id, entity_type=entity_type, hops=hops)
         return {
             "case_id": case_id,
             "entity_id": entity_id,
@@ -1193,7 +742,6 @@ async def expand_graph(
     except Exception as e:
         logger.error(f"Graph expansion failed: {e}")
         raise HTTPException(status_code=500, detail=f"Graph expansion failed: {e}")
-
 
 
 @app.get("/api/system/status")

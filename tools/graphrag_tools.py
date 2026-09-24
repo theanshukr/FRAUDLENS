@@ -5,11 +5,13 @@ Combines TigerGraph graph-topological traversal with semantic vector retrieval,
 hybrid score fusion, graph-aware reranking, and contextual reasoning.
 
 Core Architecture:
-  1. EmbeddingProvider: Abstraction supporting Gemini / TF-IDF Vectorizer
-  2. LocalVectorStore: Persistent vector index with metadata & provenance
-  3. HybridRetriever: Multi-modal fusion of graph + semantic relevance
+  1. EmbeddingProvider: Abstraction supporting deterministic TF-IDF Vectorizer
+     (with optional Google Gemini embedding provider).
+  2. LocalVectorStore: Persistent vector index with metadata, temporal anti-leakage,
+     and strict vector-to-document alignment.
+  3. HybridRetriever: Multi-modal fusion of graph + semantic relevance.
   4. GraphRAGContextBuilder: Assembles current evidence, graph topology,
-     and historical analog cases for structured LLM reasoning
+     and historical analog cases for structured reasoning.
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ import os
 import json
 import math
 import pickle
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional, Union
 from dataclasses import dataclass, field, asdict
@@ -82,7 +85,6 @@ class TFIDFEmbeddingProvider(EmbeddingProvider):
 
     def embed_text(self, text: str) -> list[float]:
         if self.vectorizer is None:
-            # Fallback uniform embedding if not fitted
             return [0.0] * 128
         vec = self.vectorizer.transform([text]).toarray()[0]
         norm = np.linalg.norm(vec)
@@ -101,7 +103,7 @@ class TFIDFEmbeddingProvider(EmbeddingProvider):
 
 
 class GeminiEmbeddingProvider(EmbeddingProvider):
-    """Google Gemini text embedding provider."""
+    """Optional Google Gemini text embedding provider."""
 
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
@@ -112,7 +114,7 @@ class GeminiEmbeddingProvider(EmbeddingProvider):
                 genai.configure(api_key=self.api_key)
                 self._configured = True
             except Exception as e:
-                logger.warning(f"Failed to configure Gemini embeddings: {e}")
+                logger.debug(f"Optional Gemini embeddings not configured: {e}")
 
     def embed_text(self, text: str) -> list[float]:
         if not self._configured:
@@ -128,9 +130,8 @@ class GeminiEmbeddingProvider(EmbeddingProvider):
 
 class CompositeEmbeddingProvider(EmbeddingProvider):
     """
-    Production-grade hybrid embedding provider:
-    Attempts Google Gemini embeddings when available, smoothly falls back
-    to the deterministic local TFIDF index.
+    Hybrid embedding provider:
+    Uses local deterministic TF-IDF index (with optional Gemini embedding support).
     """
 
     def __init__(self):
@@ -160,7 +161,8 @@ class VectorDocument:
 class LocalVectorStore:
     """
     Lightweight, persistent Vector Store for ClosedCase memory.
-    Saves vectors into NumPy array and metadata into JSON.
+    Guarantees strict 1:1 alignment between documents and embeddings matrix across
+    indexing, upsert, update, and reload.
     """
 
     def __init__(self, store_dir: Optional[Path] = None):
@@ -196,11 +198,15 @@ class LocalVectorStore:
         return len(self.documents)
 
     def upsert(self, docs: list[VectorDocument]):
-        """Idempotently insert or update case documents."""
+        """
+        Idempotently insert or update case documents with strict 1:1 vector alignment.
+        """
         doc_map = {d["doc_id"]: i for i, d in enumerate(self.documents)}
         
-        new_docs = []
-        new_embeddings = []
+        if self.embeddings_matrix is not None and len(self.embeddings_matrix) == len(self.documents):
+            existing_embeddings = [self.embeddings_matrix[i] for i in range(len(self.documents))]
+        else:
+            existing_embeddings = []
 
         for doc in docs:
             doc_dict = {
@@ -212,18 +218,28 @@ class LocalVectorStore:
             if doc.doc_id in doc_map:
                 idx = doc_map[doc.doc_id]
                 self.documents[idx] = doc_dict
+                if doc.embedding and len(existing_embeddings) > idx:
+                    existing_embeddings[idx] = np.array(doc.embedding, dtype=np.float32)
             else:
+                doc_map[doc.doc_id] = len(self.documents)
                 self.documents.append(doc_dict)
-                new_embeddings.append(doc.embedding)
+                if doc.embedding:
+                    existing_embeddings.append(np.array(doc.embedding, dtype=np.float32))
 
-        # Recompute or build matrix
-        all_embeddings = [d.embedding for d in docs if d.embedding]
-        if all_embeddings:
-            self.embeddings_matrix = np.array(all_embeddings, dtype=np.float32)
+        if existing_embeddings:
+            self.embeddings_matrix = np.array(existing_embeddings, dtype=np.float32)
         self.save()
 
-    def search(self, query_vector: list[float], top_k: int = 5, filter_pattern: Optional[str] = None) -> list[dict]:
-        """Perform cosine similarity search against stored embeddings."""
+    def search(
+        self,
+        query_vector: list[float],
+        top_k: int = 5,
+        filter_pattern: Optional[str] = None,
+        before_ts: Optional[float] = None
+    ) -> list[dict]:
+        """
+        Perform cosine similarity search against stored embeddings with optional temporal anti-leakage.
+        """
         if self.embeddings_matrix is None or len(self.documents) == 0:
             return []
 
@@ -232,17 +248,28 @@ class LocalVectorStore:
         if q_norm > 0:
             q = q / q_norm
 
-        # Cosine similarity (dot product of L2 normalized vectors)
         scores = np.dot(self.embeddings_matrix, q)
 
-        # Apply optional filter
         results = []
         for i, score in enumerate(scores):
+            if i >= len(self.documents):
+                break
             doc = self.documents[i]
-            if filter_pattern and doc.get("metadata", {}).get("pattern") != filter_pattern:
+            meta = doc.get("metadata", {})
+            if filter_pattern and meta.get("pattern") != filter_pattern:
                 continue
             
-            # Normalize cosine score from [-1, 1] to [0, 1]
+            # Temporal anti-leakage filter
+            if before_ts is not None:
+                c_ts = meta.get("closed_at") or meta.get("timestamp") or meta.get("created_at")
+                if c_ts is not None:
+                    try:
+                        ts_val = float(c_ts) if str(c_ts).replace(".", "").isdigit() else datetime.fromisoformat(str(c_ts)).timestamp()
+                        if ts_val > before_ts:
+                            continue
+                    except Exception:
+                        pass
+
             norm_score = max(0.0, min(1.0, float((score + 1.0) / 2.0)))
             results.append({
                 "case_id": doc["doc_id"],
@@ -284,12 +311,6 @@ class HybridRetriever:
     ) -> list[dict]:
         """
         Merge graph and vector candidates, computing normalized hybrid relevance.
-
-        Args:
-            graph_cases:    Cases from TigerGraph GSQL search_similar_cases
-            semantic_cases: Cases from VectorStore search
-            current_signals: Current case attributes for graph-aware reranking
-            top_k:          Number of fused candidates to return
         """
         fused_map: dict[str, dict] = {}
         current_signals = current_signals or {}
@@ -325,7 +346,6 @@ class HybridRetriever:
             meta = sc.get("metadata", {})
 
             if cid in fused_map:
-                # Found by both graph and vector search -> True Hybrid Candidate
                 fused_map[cid]["semantic_score"] = s_score
                 fused_map[cid]["retrieval_type"] = "hybrid"
                 fused_map[cid]["source"] = "Hybrid: TigerGraph + VectorStore"
@@ -351,7 +371,6 @@ class HybridRetriever:
             g = item["graph_score"]
             s = item["semantic_score"]
             
-            # Weighted baseline fusion
             if item["retrieval_type"] == "hybrid":
                 base_score = (self.graph_weight * g) + (self.semantic_weight * s)
             elif item["retrieval_type"] == "graph":
@@ -359,7 +378,6 @@ class HybridRetriever:
             else:
                 base_score = s * 0.75
 
-            # Graph-aware boost: if pattern directly matches active investigation pattern
             active_pattern = current_signals.get("pattern", "")
             if active_pattern and item.get("pattern") == active_pattern:
                 base_score = min(1.0, base_score + 0.10)
@@ -445,16 +463,13 @@ class GraphRAGContextBuilder:
             "historical_precedents": precedents,
             "provenance": {
                 "graph_source": "TigerGraph Cloud (FraudLens)",
-                "vector_source": "FraudLens VectorStore (TF-IDF / Embedding-001)",
+                "vector_source": "FraudLens VectorStore (TF-IDF)",
                 "fusion_method": "Weighted Bimodal Hybrid RAG",
             }
         }
 
 
-# ============================================================
-# 5. Global Accessors & Tool API
-# ============================================================
-
+# Global Accessors
 _embedding_provider = CompositeEmbeddingProvider()
 _vector_store = LocalVectorStore()
 _hybrid_retriever = HybridRetriever()
@@ -472,10 +487,10 @@ def get_hybrid_retriever() -> HybridRetriever:
     return _hybrid_retriever
 
 
-def semantic_search_cases(query_text: str, top_k: int = 5) -> list[dict]:
+def semantic_search_cases(query_text: str, top_k: int = 5, before_ts: Optional[float] = None) -> list[dict]:
     """Execute semantic search against historical closed cases."""
     vec = _embedding_provider.embed_text(query_text)
-    return _vector_store.search(vec, top_k=top_k)
+    return _vector_store.search(vec, top_k=top_k, before_ts=before_ts)
 
 
 def fuse_retrieval_results(

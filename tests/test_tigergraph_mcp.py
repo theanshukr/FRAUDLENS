@@ -51,22 +51,16 @@ class TestTigerGraphMCPClient:
     def test_health_check_structure(self):
         client = TigerGraphMCPClient()
         hc = client.health_check()
-        assert "enabled" in hc
+        assert "available" in hc
         assert "connected" in hc
         assert hc["server"] == "tigergraph-mcp"
         assert "tool_count" in hc
-        assert "last_check" in hc
         assert isinstance(hc["tool_count"], int)
 
     def test_mcp_provenance_format(self):
         client = TigerGraphMCPClient()
-        # Mock server call to test provenance generation
-        mock_server = MagicMock()
-        mock_server._handle_call_tool = MagicMock(return_value=[
-            MagicMock(text='```json\n{"success": true, "data": {"count": 10}}\n```')
-        ])
-        
-        with patch.object(client, "_server", mock_server):
+        mock_fn = MagicMock(return_value='```json\n{"success": true, "data": {"count": 10}}\n```')
+        with patch.object(client, "_get_tool_function", return_value=mock_fn):
             res = client.call_tool("tigergraph__get_vertex_count", {"vertex_type": "Transaction"})
             assert res.get("success") is True
             prov = res.get("provenance")
@@ -79,16 +73,12 @@ class TestTigerGraphMCPClient:
 
     def test_mcp_timeout_handling(self):
         client = TigerGraphMCPClient()
-        # Test simulated timeout
-        async def slow_call(*args, **kwargs):
+        async def slow_fn(*args, **kwargs):
             import asyncio
             await asyncio.sleep(2.0)
             return []
 
-        mock_server = MagicMock()
-        mock_server._handle_call_tool = slow_call
-
-        with patch.object(client, "_server", mock_server):
+        with patch.object(client, "_get_tool_function", return_value=slow_fn):
             res = client.call_tool("tigergraph__get_vertex_count", {}, timeout=0.05)
             assert res.get("success") is False
             assert "timed out" in res.get("error", "").lower()
@@ -197,7 +187,8 @@ class TestMCPBackendEndpoint:
         response = client.get("/api/system/mcp")
         assert response.status_code == 200
         data = response.json()
-        assert data["enabled"] is True
+        assert data["available"] is True
+        assert data["connected"] is True
         assert data["server"] == "tigergraph-mcp"
         assert "tool_count" in data
         assert isinstance(data["tool_count"], int)
