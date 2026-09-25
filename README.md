@@ -1,4 +1,4 @@
-# FraudLens 🔍
+# FraudLens 🔍 
 ### *Autonomous Graph-Native AI Fraud Investigator & Next-Best-Action Engine*
 
 [![TigerGraph](https://img.shields.io/badge/TigerGraph-Savanna%20Cloud-orange.svg)](https://www.tigergraph.com/)
